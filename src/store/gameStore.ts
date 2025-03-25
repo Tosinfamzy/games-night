@@ -20,17 +20,20 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.get("/games");
-      set({ games: response.data, isLoading: false });
+      const games = response.data;
+      set({ games, isLoading: false });
       
       // Update currentGame if we have a game selected
       const currentGame = get().currentGame;
       if (currentGame) {
-        const updatedGame = response.data.find((g: Game) => g.id === currentGame.id);
+        const updatedGame = games.find((g: Game) => g.id === currentGame.id);
         set({ currentGame: updatedGame || null });
       }
+      return games;
     } catch (error) {
       console.error("Failed to fetch games:", error);
       set({ error: "Failed to fetch games", isLoading: false });
+      throw error;
     }
   },
 

@@ -2,25 +2,85 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Button, Card, Badge, Input } from "@/components/ui";
+import { Button, Badge, Input } from "@/components/ui";
 import { useGameStore } from "@/store/gameStore";
 import { useSessionStore } from "@/store/sessionStore";
-import { GameStatus, GamePhase } from "@/types/game";
+import { GameStatus, GamePhase, Game } from "@/types/game";
 import { api } from "@/services/api";
+import { PlayerList } from "@/components/sessions/PlayerList";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/Card";
+import { BaseSession, BasePlayer } from "@/types/session";
 
 interface PlayerScore {
-  playerId: string;
-  score: number;
+  id: number;
+  points: number;
+  createdAt: string;
+  game: {
+    id: number;
+  };
+}
+
+interface PlayerScoreDto {
+  playerId: number;
+  gameId: number;
+  points: number;
+}
+
+interface GameParticipant {
+  id: number;
+  status: 'joined' | 'ready' | 'playing' | 'finished';
+  player: {
+    id: number;
+    name: string;
+  };
+}
+
+interface AddPlayerDto {
+  playerId: number;
+}
+
+interface SessionStore {
+  sessions: BaseSession[];
+  currentSession: BaseSession | null;
+  isLoading: boolean;
+  error: string | null;
+  fetchSessions: () => Promise<void>;
+  fetchSession: (id: string) => Promise<BaseSession>;
+}
+
+interface GamePlayersResponse {
+  players: {
+    id: number;
+    name: string;
+    status: 'joined' | 'ready' | 'playing' | 'finished';
+    joinedAt: string;
+    session: {
+      id: number;
+      sessionName: string;
+    }
+  }[];
+  total: number;
 }
 
 export default function GamePage() {
   const params = useParams();
   const router = useRouter();
   const gameId = params.id as string;
-  const [scores, setScores] = useState<PlayerScore[]>([]);
   const [newScore, setNewScore] = useState<Record<string, number>>({});
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [gameLeaderboard, setGameLeaderboard] = useState<any>(null);
+  const [sessionScores, setSessionScores] = useState<any>(null);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | "">("");
+  const [isAddingPlayer, setIsAddingPlayer] = useState(false);
+  const [addPlayerError, setAddPlayerError] = useState<string | null>(null);
+  const [gamePlayers, setGamePlayers] = useState<GamePlayersResponse | null>(null);
 
   const {
     games,
@@ -41,38 +101,27 @@ export default function GamePage() {
 
   const { currentSession, fetchSession } = useSessionStore();
 
+  // First effect to fetch games
   useEffect(() => {
-    async function loadGame() {
-      setIsPageLoading(true);
-      setLoadError(null);
+    if (!gameId) return;
+    setIsPageLoading(true);
+    fetchGames();
+  }, [gameId, fetchGames]);
 
-      try {
-        if (!gameId) {
-          setLoadError("Invalid game ID");
-          return;
-        }
+  // Second effect to set current game when games are loaded
+  useEffect(() => {
+    if (!gameId || isLoading || games.length === 0) return;
 
-        await fetchGames();
-        const game = games.find(g => g.id.toString() === gameId);
-        
-        if (!game) {
-          setLoadError("Game not found");
-          return;
-        }
-
-        setCurrentGame(gameId);
-      } catch (err) {
-        console.error("Error loading game:", err);
-        setLoadError(
-          "Failed to load the game. It might not exist or you may not have permission to view it."
-        );
-      } finally {
-        setIsPageLoading(false);
-      }
+    const game = games.find((g) => g.id.toString() === gameId);
+    if (!game) {
+      setLoadError("Game not found");
+      setIsPageLoading(false);
+      return;
     }
 
-    loadGame();
-  }, [gameId, fetchGames]);
+    setCurrentGame(gameId);
+    setIsPageLoading(false);
+  }, [gameId, games, isLoading, setCurrentGame]);
 
   useEffect(() => {
     if (currentGame?.sessionId) {
@@ -80,20 +129,80 @@ export default function GamePage() {
     }
   }, [currentGame?.sessionId, fetchSession]);
 
-  const handleUpdateScore = async (playerId: string, score: number) => {
-    if (!score || !gameId) return;
+  // Fetch leaderboards when game or session changes
+  useEffect(() => {
+    async function fetchLeaderboards() {
+      if (!currentGame?.sessionId || !gameId) return;
+
+      try {
+        // Fetch game-specific leaderboard
+        const gameLeaderboardResponse = await api.get(
+          `/scoring/leaderboard/${currentGame.sessionId}/${gameId}`
+        );
+        setGameLeaderboard(gameLeaderboardResponse.data);
+
+        // Fetch session-wide scores
+        const sessionScoresResponse = await api.get(
+          `/scoring/session/${currentGame.sessionId}`
+        );
+        setSessionScores(sessionScoresResponse.data);
+      } catch (error) {
+        console.error("Failed to fetch leaderboards:", error);
+      }
+    }
+
+    fetchLeaderboards();
+  }, [currentGame?.sessionId, gameId]);
+
+  // Subscribe to score updates when game or session changes
+  useEffect(() => {
+    async function subscribeToScores() {
+      if (!currentGame?.sessionId) return;
+
+      try {
+        await api.get(`/scoring/subscribe/${currentGame.sessionId}`);
+      } catch (error) {
+        console.error("Failed to subscribe to score updates:", error);
+      }
+    }
+
+    subscribeToScores();
+  }, [currentGame?.sessionId]);
+
+  // Add new effect to fetch game players
+  useEffect(() => {
+    async function fetchGamePlayers() {
+      if (!gameId) return;
+      
+      try {
+        const response = await api.get<GamePlayersResponse>(`/games/${gameId}/players`);
+        setGamePlayers(response.data);
+      } catch (error) {
+        console.error("Failed to fetch game players:", error);
+      }
+    }
+
+    fetchGamePlayers();
+  }, [gameId]);
+
+  const handleUpdateScore = async (playerId: string, points: number) => {
+    if (!points || !gameId || !currentGame?.sessionId) return;
     
     try {
-      const gameState = currentGame?.state as any; // TODO: Update Game type to include scores
-      const currentScores = gameState?.scores || {};
-      await api.put(`/games/${gameId}/state`, {
-        scores: {
-          ...currentScores,
-          [playerId]: (currentScores[playerId] || 0) + score
-        }
-      });
+      await api.post('/scoring/player', {
+        playerId: parseInt(playerId),
+        gameId: parseInt(gameId),
+        points
+      } as PlayerScoreDto);
       
-      await fetchGames();
+      // Refresh leaderboards after updating score
+      const [gameLeaderboardResponse, sessionScoresResponse] = await Promise.all([
+        api.get(`/scoring/leaderboard/${currentGame.sessionId}/${gameId}`),
+        api.get(`/scoring/session/${currentGame.sessionId}`)
+      ]);
+      
+      setGameLeaderboard(gameLeaderboardResponse.data);
+      setSessionScores(sessionScoresResponse.data);
       setNewScore({ ...newScore, [playerId]: 0 });
     } catch (error) {
       console.error("Failed to update score:", error);
@@ -119,13 +228,25 @@ export default function GamePage() {
 
   const handleJoinGame = async () => {
     if (gameId) {
-      await joinGame(gameId);
+      try {
+        await api.post(`/games/${gameId}/players`, {
+          playerId: 1 // TODO: Get actual player ID from auth/session
+        } as AddPlayerDto);
+        await fetchGames();
+      } catch (error) {
+        console.error("Failed to join game:", error);
+      }
     }
   };
 
   const handleLeaveGame = async () => {
     if (gameId && confirm("Are you sure you want to leave this game?")) {
-      await leaveGame(gameId);
+      try {
+        await api.delete(`/games/${gameId}/players/1`); // TODO: Get actual player ID
+        await fetchGames();
+      } catch (error) {
+        console.error("Failed to leave game:", error);
+      }
     }
   };
 
@@ -162,9 +283,8 @@ export default function GamePage() {
   const handlePlayerReady = async () => {
     if (gameId) {
       try {
-        await playerReady(gameId, {
-          playerId: 1,
-        });
+        await api.put(`/games/${gameId}/players/1/ready`); // TODO: Get actual player ID
+        await fetchGames();
       } catch (error) {
         console.error("Failed to mark player as ready:", error);
       }
@@ -180,6 +300,47 @@ export default function GamePage() {
       }
     }
   };
+
+  const handleAddPlayer = async () => {
+    if (!selectedPlayerId || !gameId) return;
+
+    setIsAddingPlayer(true);
+    setAddPlayerError(null);
+
+    try {
+      await api.post(`/games/${gameId}/players`, {
+        playerId: selectedPlayerId
+      } as AddPlayerDto);
+      
+      // Refetch both game data and players
+      await Promise.all([
+        fetchGames(),
+        api.get<GamePlayersResponse>(`/games/${gameId}/players`).then(response => {
+          setGamePlayers(response.data);
+        })
+      ]);
+      
+      setSelectedPlayerId("");
+    } catch (error) {
+      console.error("Failed to add player:", error);
+      setAddPlayerError(error instanceof Error ? error.message : "Failed to add player to game");
+    } finally {
+      setIsAddingPlayer(false);
+    }
+  };
+
+  const onPlayerAdded = (player: BasePlayer) => {
+    if (currentSession) {
+      fetchSession(currentSession.id.toString());
+    }
+  };
+
+  // Get available players (players in session who aren't in the game)
+  const availablePlayers = currentSession?.players?.filter(player => 
+    !currentGame?.currentPlayers?.some(gamePlayerId => 
+      gamePlayerId === player.id.toString()
+    )
+  ) || [];
 
   if (isPageLoading) {
     return (
@@ -277,93 +438,169 @@ export default function GamePage() {
           </div>
         </div>
 
-        <Card className="mb-8">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">Game Details</h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-900">Type</p>
-                  <p className="font-medium text-gray-900">{currentGame.type}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-900">Players</p>
-                  <p className="font-medium text-gray-900">
-                    {currentGame.currentPlayers?.length ?? 0} /{" "}
-                    {currentGame.maxPlayers ?? 0}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-900">Created By</p>
-                  <p className="font-medium text-gray-900">{currentGame.createdBy}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-900">Created At</p>
-                  <p className="font-medium text-gray-900">
-                    {new Date(currentGame.createdAt).toLocaleString()}
-                  </p>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          {/* Game Leaderboard */}
+          <Card>
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4 text-gray-900">Game Leaderboard</h2>
+              <div className="space-y-4">
+                {gameLeaderboard && Object.entries(gameLeaderboard).map(([playerId, score]: [string, any]) => (
+                  <div
+                    key={playerId}
+                    className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-md"
+                  >
+                    <span className="font-medium text-gray-900">{playerId}</span>
+                    <span className="font-medium text-gray-900">{score} points</span>
+                  </div>
+                ))}
               </div>
-              {currentGame.customRules && (
-                <div>
-                  <p className="text-sm text-gray-900">Custom Rules</p>
-                  <p className="font-medium mt-1 text-gray-900">{currentGame.customRules}</p>
-                </div>
-              )}
             </div>
-          </div>
+          </Card>
+
+          {/* Session Scores */}
+          <Card>
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4 text-gray-900">Session Total Scores</h2>
+              <div className="space-y-4">
+                {sessionScores && Object.entries(sessionScores).map(([playerId, score]: [string, any]) => (
+                  <div
+                    key={playerId}
+                    className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-md"
+                  >
+                    <span className="font-medium text-gray-900">{playerId}</span>
+                    <span className="font-medium text-gray-900">{score} points</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Session Games */}
+        {currentSession?.games && currentSession.games.length > 0 && (
+          <Card className="mb-8">
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4 text-gray-900">Games in Session</h2>
+              <div className="space-y-4">
+                {currentSession.games.map((game) => (
+                  <div
+                    key={game.id}
+                    className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-md"
+                  >
+                    <div className="flex items-center gap-4">
+                      <span className="font-medium text-gray-900">{game.name}</span>
+                      <Badge variant={getStatusVariant(game.status as GameStatus)}>
+                        {game.status}
+                      </Badge>
+                    </div>
+                    {game.id.toString() === gameId ? (
+                      <Badge variant="info">Current Game</Badge>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/games/${game.id}`)}
+                      >
+                        View Game
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Session Players Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Session Players</CardTitle>
+            <CardDescription>Add players to the session before adding them to the game</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PlayerList 
+              sessionId={currentSession?.id?.toString() || ""} 
+              players={currentSession?.players || []} 
+              onPlayerAdded={onPlayerAdded}
+            />
+          </CardContent>
         </Card>
 
-        <Card className="mb-8 text-gray-900">
-          <div className="p-6 text-gray-900">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">Players & Scores</h2>
+        {/* Game Players Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Game Players</CardTitle>
+            <CardDescription>
+              Manage players in this game
+            </CardDescription>
+            <div className="flex gap-2 mt-4">
+              <select
+                value={selectedPlayerId}
+                onChange={(e) => {
+                  setSelectedPlayerId(Number(e.target.value));
+                  setAddPlayerError(null);
+                }}
+                className="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isAddingPlayer}
+              >
+                <option value="">Select a player</option>
+                {availablePlayers.map((player: BasePlayer) => (
+                  <option key={player.id} value={player.id}>
+                    {player.name}
+                  </option>
+                ))}
+              </select>
+              <Button 
+                onClick={handleAddPlayer} 
+                disabled={!selectedPlayerId || isAddingPlayer}
+              >
+                {isAddingPlayer ? "Adding..." : "Add to Game"}
+              </Button>
+            </div>
+            {addPlayerError && (
+              <p className="mt-2 text-sm text-red-500">{addPlayerError}</p>
+            )}
+          </CardHeader>
+          <CardContent>
             <div className="space-y-4">
-              {(currentGame.currentPlayers ?? []).map((playerId) => (
-                <div
-                  key={playerId}
-                  className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-md"
-                >
-                  <div className="flex items-center gap-4">
-                    <span className="font-medium text-gray-900">{playerId}</span>
-                    {playerId === currentGame.createdBy && (
+              {gamePlayers?.players.map((player) => (
+                <div key={player.id} className="flex items-center justify-between p-2 bg-gray-100 rounded">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{player.name}</span>
+                    <Badge variant="info">{player.status}</Badge>
+                    {currentGame?.createdBy === player.id.toString() && (
                       <Badge variant="info">Host</Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-medium text-gray-900">
-                      Total:{" "}
-                      {((currentGame.state as any)?.scores?.[playerId]) || 0}
-                    </span>
-                    {currentGame.state === "in_progress" && (
-                      <div className="flex items-center gap-2 text-gray-900">
-                        <Input
-                          type="number"
-                          value={newScore[playerId] || ""}
-                          onChange={(e) =>
-                            setNewScore({
-                              ...newScore,
-                              [playerId]: parseInt(e.target.value) || 0,
-                            })
-                          }
-                          className="w-20"
-                          placeholder="Score"
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            handleUpdateScore(playerId, newScore[playerId] || 0)
-                          }
-                          disabled={!newScore[playerId]}
-                        >
-                          Add
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                  {currentGame?.status === "active" && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={newScore[player.id] || 0}
+                        onChange={(e) => setNewScore({
+                          ...newScore,
+                          [player.id]: parseInt(e.target.value) || 0
+                        })}
+                        className="w-20 px-2 py-1 border rounded"
+                        min={0}
+                      />
+                      <Button
+                        onClick={() => handleUpdateScore(player.id.toString(), newScore[player.id] || 0)}
+                        disabled={!newScore[player.id]}
+                      >
+                        Update Score
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
+              {(!gamePlayers?.players || gamePlayers.players.length === 0) && (
+                <div className="text-center text-gray-500">
+                  No players added to the game yet
+                </div>
+              )}
             </div>
-          </div>
+          </CardContent>
         </Card>
 
         <div className="flex gap-4 justify-end">
