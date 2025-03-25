@@ -4,6 +4,7 @@ import {
   CreateGameDto,
   GameSetupDto,
   PlayerReadyDto,
+  Game
 } from "@/types/game";
 // Update the import path to correct location
 import { api } from "@/services/api";
@@ -20,49 +21,49 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     try {
       const response = await api.get("/games");
       set({ games: response.data, isLoading: false });
+      
+      // Update currentGame if we have a game selected
+      const currentGame = get().currentGame;
+      if (currentGame) {
+        const updatedGame = response.data.find((g: Game) => g.id === currentGame.id);
+        set({ currentGame: updatedGame || null });
+      }
     } catch (error) {
       console.error("Failed to fetch games:", error);
       set({ error: "Failed to fetch games", isLoading: false });
     }
   },
 
-  fetchGame: async (id: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await api.get(`/games/${id}`);
-      const game = response.data;
-      set({ currentGame: game, isLoading: false });
+  setCurrentGame: (gameId: string) => {
+    const game = get().games.find((g: Game) => g.id.toString() === gameId);
+    set({ currentGame: game || null });
 
-      // Subscribe to real-time updates for this game
-      wsService.subscribeToGame(id, {
+    // Subscribe to real-time updates for this game if found
+    if (game) {
+      wsService.subscribeToGame(gameId, {
         onScoreUpdate: (data) => {
           set((state) => ({
-            games: state.games.map((g) =>
-              g.id === Number(id) ? { ...g, scores: data.scores } : g
+            games: state.games.map((g: Game) =>
+              g.id.toString() === gameId ? { ...g, scores: data.scores } : g
             ),
             currentGame:
-              state.currentGame?.id === Number(id)
+              state.currentGame?.id.toString() === gameId
                 ? { ...state.currentGame, scores: data.scores }
                 : state.currentGame,
           }));
         },
         onStateUpdate: (data) => {
           set((state) => ({
-            games: state.games.map((g) =>
-              g.id === Number(id) ? data.state : g
+            games: state.games.map((g: Game) =>
+              g.id.toString() === gameId ? data.state : g
             ),
             currentGame:
-              state.currentGame?.id === Number(id)
+              state.currentGame?.id.toString() === gameId
                 ? data.state
                 : state.currentGame,
           }));
         },
       });
-
-      return game;
-    } catch (err) {
-      set({ error: "Failed to fetch game", isLoading: false });
-      throw err;
     }
   },
 

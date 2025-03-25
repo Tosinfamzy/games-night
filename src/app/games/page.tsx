@@ -11,8 +11,12 @@ import { CreateSessionModal } from "@/components/sessions/CreateSessionModal";
 import { SessionFormData } from "@/types/session";
 import { useGameStore } from "@/store/gameStore";
 import { useSessionStore } from "@/store/sessionStore";
+import Link from "next/link";
+import { api } from "@/services/api";
+import { useRouter } from "next/navigation";
 
 export default function GamesPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sessionFilter, setSessionFilter] = useState("all");
@@ -73,18 +77,11 @@ export default function GamesPage() {
   const handleAddGames = async (selectedGameIds: number[]) => {
     if (selectedSessionId) {
       try {
-        // Add games to session logic here
-        await Promise.all(
-          selectedGameIds.map((gameId) =>
-            fetch(`/api/sessions/${selectedSessionId}/games`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ gameIds: [gameId] }),
-            })
-          )
-        );
+        // Using the API to add games to session
+        await api.post(`/sessions/${selectedSessionId}/games`, {
+          gameIds: selectedGameIds,
+        });
+        await fetchGames(); // Refresh games after adding
         setIsCreateModalOpen(false);
       } catch (error) {
         console.error("Failed to add games to session:", error);
@@ -92,10 +89,32 @@ export default function GamesPage() {
     }
   };
 
-  const handleCreateGame = async (data: { name: string; rules?: string }) => {
-    if (selectedSessionId) {
-      await createGame(data);
+  const handleCreateGame = async (data: {
+    name: string;
+    customRules?: string;
+  }) => {
+    try {
+      // First create the game with valid properties from CreateGameDto
+      const newGame = await createGame({
+        name: data.name,
+        rules: data.customRules,
+      });
+
+      // If we have a sessionId, associate the game with the session
+      if (selectedSessionId) {
+        try {
+          await api.post(`/sessions/${selectedSessionId}/games`, {
+            gameIds: [newGame.id],
+          });
+        } catch (error) {
+          console.error("Failed to associate game with session:", error);
+        }
+      }
+
+      await fetchGames(); // Refresh games after creation
       setIsCreateModalOpen(false);
+    } catch (error) {
+      console.error("Failed to create game:", error);
     }
   };
 
@@ -129,10 +148,16 @@ export default function GamesPage() {
     );
   }
 
+  const handleNavigateToGame = (gameId: number) => {
+    router.push(`/games/${gameId}`);
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8 min-h-screen">
+    <div className="container mx-auto px-4 py-8 min-h-screen bg-white">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Games</h1>
+        <Link href={"/"}>
+          <h1 className="text-3xl font-bold text-gray-900">Games</h1>
+        </Link>
         <Button onClick={() => setIsCreateSessionModalOpen(true)}>
           <PlusIcon className="h-5 w-5 mr-2" />
           Create New Game
@@ -205,7 +230,7 @@ export default function GamesPage() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => (window.location.href = `/games/${game.id}`)}
+                  onClick={() => handleNavigateToGame(game.id)}
                 >
                   {game.state === "setup" ? "Join Game" : "View Game"}
                 </Button>

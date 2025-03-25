@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Button, Card, Badge, Input } from "@/components/ui";
 import { useGameStore } from "@/store/gameStore";
 import { useSessionStore } from "@/store/sessionStore";
-import { GameStatus } from "@/types/game";
+import { GameStatus, GamePhase } from "@/types/game";
 import { api } from "@/services/api";
 
 interface PlayerScore {
@@ -19,14 +19,22 @@ export default function GamePage() {
   const gameId = params.id as string;
   const [scores, setScores] = useState<PlayerScore[]>([]);
   const [newScore, setNewScore] = useState<Record<string, number>>({});
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const {
+    games,
     currentGame,
-    fetchGame,
+    fetchGames,
+    setCurrentGame,
     joinGame,
     leaveGame,
     startGame,
     endGame,
+    setupGame,
+    playerReady,
+    completeGame,
+    updateGameState,
     isLoading,
     error,
   } = useGameStore();
@@ -34,11 +42,37 @@ export default function GamePage() {
   const { currentSession, fetchSession } = useSessionStore();
 
   useEffect(() => {
-    if (gameId) {
-      fetchGame(gameId);
-      fetchScores();
+    async function loadGame() {
+      setIsPageLoading(true);
+      setLoadError(null);
+
+      try {
+        if (!gameId) {
+          setLoadError("Invalid game ID");
+          return;
+        }
+
+        await fetchGames();
+        const game = games.find(g => g.id.toString() === gameId);
+        
+        if (!game) {
+          setLoadError("Game not found");
+          return;
+        }
+
+        setCurrentGame(gameId);
+      } catch (err) {
+        console.error("Error loading game:", err);
+        setLoadError(
+          "Failed to load the game. It might not exist or you may not have permission to view it."
+        );
+      } finally {
+        setIsPageLoading(false);
+      }
     }
-  }, [gameId, fetchGame]);
+
+    loadGame();
+  }, [gameId, fetchGames]);
 
   useEffect(() => {
     if (currentGame?.sessionId) {
@@ -46,23 +80,20 @@ export default function GamePage() {
     }
   }, [currentGame?.sessionId, fetchSession]);
 
-  const fetchScores = async () => {
-    try {
-      const response = await api.get(`/games/${gameId}/scores`);
-      setScores(response.data);
-    } catch (error) {
-      console.error("Failed to fetch scores:", error);
-    }
-  };
-
   const handleUpdateScore = async (playerId: string, score: number) => {
-    if (!score) return;
+    if (!score || !gameId) return;
+    
     try {
-      await api.post(`/games/${gameId}/scores`, {
-        playerId,
-        score,
+      const gameState = currentGame?.state as any; // TODO: Update Game type to include scores
+      const currentScores = gameState?.scores || {};
+      await api.put(`/games/${gameId}/state`, {
+        scores: {
+          ...currentScores,
+          [playerId]: (currentScores[playerId] || 0) + score
+        }
       });
-      await fetchScores();
+      
+      await fetchGames();
       setNewScore({ ...newScore, [playerId]: 0 });
     } catch (error) {
       console.error("Failed to update score:", error);
@@ -110,10 +141,68 @@ export default function GamePage() {
     }
   };
 
-  if (isLoading) {
+  const handleSetupGame = async () => {
+    if (gameId) {
+      try {
+        await setupGame(gameId, {
+          totalRounds: 10,
+          config: JSON.stringify({
+            gameType: currentGame?.type || "custom",
+            maxPlayers: currentGame?.maxPlayers || 4,
+            minPlayers: currentGame?.minPlayers || 2,
+            customRules: currentGame?.customRules,
+          }),
+        });
+      } catch (error) {
+        console.error("Failed to setup game:", error);
+      }
+    }
+  };
+
+  const handlePlayerReady = async () => {
+    if (gameId) {
+      try {
+        await playerReady(gameId, {
+          playerId: 1,
+        });
+      } catch (error) {
+        console.error("Failed to mark player as ready:", error);
+      }
+    }
+  };
+
+  const handleCompleteGame = async () => {
+    if (gameId && confirm("Are you sure you want to complete this game?")) {
+      try {
+        await completeGame(gameId);
+      } catch (error) {
+        console.error("Failed to complete game:", error);
+      }
+    }
+  };
+
+  if (isPageLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Loading game...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-900">Loading game details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError || (!isLoading && !currentGame)) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center text-red-500 mb-4">
+          {loadError || "Game not found"}
+        </div>
+        <div className="text-center">
+          <Button onClick={() => router.push("/games")}>
+            Back to Games List
+          </Button>
+        </div>
       </div>
     );
   }
@@ -121,7 +210,15 @@ export default function GamePage() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-red-500">Error: {error}</div>
+        <div className="text-center text-red-500">{error}</div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">Loading game...</div>
       </div>
     );
   }
@@ -134,20 +231,26 @@ export default function GamePage() {
     );
   }
 
-  const isHost = currentGame.createdBy === "current_user"; // Replace with actual user ID check
-  const isPlayer = currentGame.currentPlayers.includes("current_user"); // Replace with actual user ID check
+  const isHost = currentGame.createdBy === "current_user";
+  const isPlayer = currentGame.currentPlayers?.includes("current_user") ?? false;
   const canJoin =
     currentGame.status === "pending" &&
     !isPlayer &&
-    currentGame.currentPlayers.length < (currentGame.maxPlayers || 0);
+    (currentGame.currentPlayers?.length ?? 0) < (currentGame.maxPlayers || 0);
+  const canSetup =
+    isHost &&
+    currentGame.status === "pending" &&
+    currentGame.state === "setup";
   const canStart =
     isHost &&
     currentGame.status === "pending" &&
-    currentGame.currentPlayers.length >= (currentGame.minPlayers || 0);
+    currentGame.state === "ready" &&
+    (currentGame.currentPlayers?.length ?? 0) >= (currentGame.minPlayers || 0);
   const canEnd = isHost && currentGame.status === "active";
+  const canComplete = isHost && currentGame.status === "active";
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 text-gray-900 bg-white min-h-screen">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <Button
@@ -163,7 +266,7 @@ export default function GamePage() {
                 {currentGame.name}
               </h1>
               {currentSession && (
-                <p className="text-gray-600 mt-2">
+                <p className="text-gray-900 mt-2">
                   Session: {currentSession.sessionName}
                 </p>
               )}
@@ -176,63 +279,63 @@ export default function GamePage() {
 
         <Card className="mb-8">
           <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Game Details</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Game Details</h2>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">Type</p>
-                  <p className="font-medium">{currentGame.type}</p>
+                  <p className="text-sm text-gray-900">Type</p>
+                  <p className="font-medium text-gray-900">{currentGame.type}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Players</p>
-                  <p className="font-medium">
-                    {currentGame.currentPlayers.length} /{" "}
-                    {currentGame.maxPlayers}
+                  <p className="text-sm text-gray-900">Players</p>
+                  <p className="font-medium text-gray-900">
+                    {currentGame.currentPlayers?.length ?? 0} /{" "}
+                    {currentGame.maxPlayers ?? 0}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Created By</p>
-                  <p className="font-medium">{currentGame.createdBy}</p>
+                  <p className="text-sm text-gray-900">Created By</p>
+                  <p className="font-medium text-gray-900">{currentGame.createdBy}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Created At</p>
-                  <p className="font-medium">
+                  <p className="text-sm text-gray-900">Created At</p>
+                  <p className="font-medium text-gray-900">
                     {new Date(currentGame.createdAt).toLocaleString()}
                   </p>
                 </div>
               </div>
               {currentGame.customRules && (
                 <div>
-                  <p className="text-sm text-gray-600">Custom Rules</p>
-                  <p className="font-medium mt-1">{currentGame.customRules}</p>
+                  <p className="text-sm text-gray-900">Custom Rules</p>
+                  <p className="font-medium mt-1 text-gray-900">{currentGame.customRules}</p>
                 </div>
               )}
             </div>
           </div>
         </Card>
 
-        <Card className="mb-8">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Players & Scores</h2>
+        <Card className="mb-8 text-gray-900">
+          <div className="p-6 text-gray-900">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900">Players & Scores</h2>
             <div className="space-y-4">
-              {currentGame.currentPlayers.map((playerId) => (
+              {(currentGame.currentPlayers ?? []).map((playerId) => (
                 <div
                   key={playerId}
                   className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-md"
                 >
                   <div className="flex items-center gap-4">
-                    <span className="font-medium">{playerId}</span>
+                    <span className="font-medium text-gray-900">{playerId}</span>
                     {playerId === currentGame.createdBy && (
                       <Badge variant="info">Host</Badge>
                     )}
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="font-medium">
+                    <span className="font-medium text-gray-900">
                       Total:{" "}
-                      {scores.find((s) => s.playerId === playerId)?.score || 0}
+                      {((currentGame.state as any)?.scores?.[playerId]) || 0}
                     </span>
                     {currentGame.state === "in_progress" && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-gray-900">
                         <Input
                           type="number"
                           value={newScore[playerId] || ""}
@@ -270,10 +373,19 @@ export default function GamePage() {
               Leave Game
             </Button>
           )}
+          {canSetup && <Button onClick={handleSetupGame}>Setup Game</Button>}
+          {isPlayer && currentGame.state === "setup" && (
+            <Button onClick={handlePlayerReady}>Mark as Ready</Button>
+          )}
           {canStart && <Button onClick={handleStartGame}>Start Game</Button>}
           {canEnd && (
             <Button variant="outline" onClick={handleEndGame}>
               End Game
+            </Button>
+          )}
+          {canComplete && (
+            <Button variant="outline" onClick={handleCompleteGame}>
+              Complete Game
             </Button>
           )}
         </div>

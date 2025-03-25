@@ -75,7 +75,7 @@ export interface GameStoreState {
 
   // CRUD operations
   fetchGames: () => Promise<void>;
-  fetchGame: (id: string) => Promise<Game>;
+  setCurrentGame: (gameId: string) => void;
   createGame: (data: CreateGameDto) => Promise<Game>;
   setupGame: (id: string, data: GameSetupDto) => Promise<Game>;
   playerReady: (id: string, data: PlayerReadyDto) => Promise<Game>;
