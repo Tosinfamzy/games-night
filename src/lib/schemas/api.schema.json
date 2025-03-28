@@ -1,0 +1,1771 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["App"]
+      }
+    },
+    "/games": {
+      "get": {
+        "operationId": "GamesController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Return all games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Game"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get all games",
+        "tags": ["games"]
+      },
+      "post": {
+        "operationId": "GamesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Game creation data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Game created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create a new game",
+        "tags": ["games"]
+      }
+    },
+    "/games/{id}/players": {
+      "get": {
+        "operationId": "GamesController_getGamePlayers",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Game ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns all players in the game with their status and session info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "players": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "number"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["joined", "ready", "playing", "finished"]
+                          },
+                          "joinedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "session": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "number"
+                              },
+                              "sessionName": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get all players in a specific game",
+        "tags": ["games"]
+      },
+      "post": {
+        "operationId": "GamesController_addPlayer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Game ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPlayerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Player added to game successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameParticipant"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Add a player to a game",
+        "tags": ["games"]
+      }
+    },
+    "/games/{id}/setup": {
+      "put": {
+        "operationId": "GamesController_setup",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Game ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GameSetupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Game setup successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Setup a game with initial configuration",
+        "tags": ["games"]
+      }
+    },
+    "/games/{id}/players/{playerId}/ready": {
+      "put": {
+        "operationId": "GamesController_playerReady",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Game ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "playerId",
+            "required": true,
+            "in": "path",
+            "description": "Player ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player marked as ready successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameParticipant"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Mark a player as ready in a game",
+        "tags": ["games"]
+      }
+    },
+    "/games/{id}/players/{playerId}": {
+      "delete": {
+        "operationId": "GamesController_removePlayer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Game ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "playerId",
+            "required": true,
+            "in": "path",
+            "description": "Player ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player removed from game successfully"
+          }
+        },
+        "summary": "Remove a player from a game",
+        "tags": ["games"]
+      }
+    },
+    "/games/{id}/start": {
+      "post": {
+        "operationId": "GamesController_startGame",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Game ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game started successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Start the game",
+        "tags": ["games"]
+      }
+    },
+    "/games/{id}/complete": {
+      "post": {
+        "operationId": "GamesController_completeGame",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Game ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Complete the game",
+        "tags": ["games"]
+      }
+    },
+    "/games/{id}/state": {
+      "put": {
+        "operationId": "GamesController_updateGameState",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Game ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Game state updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update game state",
+        "tags": ["games"]
+      }
+    },
+    "/sessions": {
+      "post": {
+        "operationId": "SessionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Session created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Create a new game session",
+        "tags": ["sessions"]
+      },
+      "get": {
+        "operationId": "SessionsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of all sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get all sessions",
+        "tags": ["sessions"]
+      }
+    },
+    "/sessions/{id}": {
+      "get": {
+        "operationId": "SessionsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        },
+        "summary": "Get a session by ID",
+        "tags": ["sessions"]
+      },
+      "patch": {
+        "operationId": "SessionsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        },
+        "summary": "Update session details",
+        "tags": ["sessions"]
+      },
+      "delete": {
+        "operationId": "SessionsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Session deleted successfully"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        },
+        "summary": "Delete/End a session",
+        "tags": ["sessions"]
+      }
+    },
+    "/sessions/{id}/players": {
+      "get": {
+        "operationId": "SessionsController_getSessionPlayers",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of players in the session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Player"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        },
+        "summary": "Get all players in a session",
+        "tags": ["sessions"]
+      },
+      "post": {
+        "operationId": "SessionsController_assignPlayers",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignPlayersDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Players assigned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        },
+        "summary": "Assign players to a session",
+        "tags": ["sessions"]
+      }
+    },
+    "/sessions/{id}/teams/random": {
+      "post": {
+        "operationId": "SessionsController_createRandomTeams",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teams created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid number of teams"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        },
+        "summary": "Create random teams in a session",
+        "tags": ["sessions"]
+      }
+    },
+    "/sessions/{id}/teams/custom": {
+      "post": {
+        "operationId": "SessionsController_createCustomTeams",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teams created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid team configuration"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        },
+        "summary": "Create custom teams in a session",
+        "tags": ["sessions"]
+      }
+    },
+    "/sessions/{id}/start": {
+      "post": {
+        "operationId": "SessionsController_startSession",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session started successfully"
+          },
+          "400": {
+            "description": "Invalid session state"
+          }
+        },
+        "summary": "Start a session",
+        "tags": ["sessions"]
+      }
+    },
+    "/sessions/{id}/end": {
+      "post": {
+        "operationId": "SessionsController_endSession",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session ended successfully"
+          },
+          "400": {
+            "description": "Invalid session state"
+          }
+        },
+        "summary": "End a session",
+        "tags": ["sessions"]
+      }
+    },
+    "/sessions/{id}/next-game": {
+      "post": {
+        "operationId": "SessionsController_moveToNextGame",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Moved to next game successfully"
+          },
+          "400": {
+            "description": "No more games available"
+          }
+        },
+        "summary": "Move to the next game in the session",
+        "tags": ["sessions"]
+      }
+    },
+    "/sessions/teams/{id}/players": {
+      "put": {
+        "operationId": "SessionsController_addPlayerToTeam",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Team ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player added to team successfully"
+          }
+        },
+        "summary": "Add a player to a team",
+        "tags": ["sessions"]
+      }
+    },
+    "/sessions/teams/{id}/players/{playerId}": {
+      "delete": {
+        "operationId": "SessionsController_removePlayerFromTeam",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Team ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "playerId",
+            "required": true,
+            "in": "path",
+            "description": "Player ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player removed from team successfully"
+          }
+        },
+        "summary": "Remove a player from a team",
+        "tags": ["sessions"]
+      }
+    },
+    "/sessions/{id}/games": {
+      "post": {
+        "operationId": "SessionsController_addGames",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Session ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddGamesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Games added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot add games to non-pending session"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        },
+        "summary": "Add games to an existing session",
+        "tags": ["sessions"]
+      }
+    },
+    "/players": {
+      "post": {
+        "operationId": "PlayersController_addPlayer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlayerDto"
+              },
+              "examples": {
+                "example1": {
+                  "value": {
+                    "name": "John Doe",
+                    "sessionId": 1
+                  },
+                  "description": "Example of adding a new player"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Player added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Player"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        },
+        "summary": "Add a new player to a session",
+        "tags": ["players"]
+      }
+    },
+    "/players/{id}": {
+      "get": {
+        "operationId": "PlayersController_getPlayer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Player ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player found successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Player"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found"
+          }
+        },
+        "summary": "Get a player by ID",
+        "tags": ["players"]
+      },
+      "delete": {
+        "operationId": "PlayersController_removePlayer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Player ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player removed successfully"
+          },
+          "404": {
+            "description": "Player not found"
+          }
+        },
+        "summary": "Remove a player from a session",
+        "tags": ["players"]
+      }
+    },
+    "/teams": {
+      "post": {
+        "operationId": "TeamsController_createTeam",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Teams"]
+      }
+    },
+    "/scoring/player": {
+      "post": {
+        "operationId": "ScoringController_addPointsToPlayer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerScoreDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Points added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Score"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "Add points to a player in a specific game",
+        "tags": ["scoring"]
+      }
+    },
+    "/scoring/team": {
+      "post": {
+        "operationId": "ScoringController_addPointsToTeam",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamScoreDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Points added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Score"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "summary": "Add points to a team in a specific game",
+        "tags": ["scoring"]
+      }
+    },
+    "/scoring/leaderboard/{sessionId}/{gameId}": {
+      "get": {
+        "operationId": "ScoringController_getGameLeaderboard",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "The session ID",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "gameId",
+            "required": true,
+            "in": "path",
+            "description": "The game ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returned game leaderboard successfully"
+          }
+        },
+        "summary": "Get leaderboard for a specific game in a session",
+        "tags": ["scoring"]
+      }
+    },
+    "/scoring/session/{sessionId}": {
+      "get": {
+        "operationId": "ScoringController_getSessionAggregatedScores",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "The session ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returned session aggregated scores successfully"
+          }
+        },
+        "summary": "Get aggregated scores for all games in a session",
+        "tags": ["scoring"]
+      }
+    },
+    "/scoring/subscribe/{sessionId}": {
+      "get": {
+        "operationId": "ScoringController_subscribe",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "description": "The session ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscribed successfully"
+          }
+        },
+        "summary": "Subscribe to session updates",
+        "tags": ["scoring"]
+      }
+    },
+    "/analytics/games/{gameId}": {
+      "get": {
+        "operationId": "AnalyticsController_getGameAnalytics",
+        "parameters": [
+          {
+            "name": "gameId",
+            "required": true,
+            "in": "path",
+            "description": "ID of the game",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns game analytics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameAnalytics"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Game not found"
+          }
+        },
+        "summary": "Get analytics for a specific game",
+        "tags": ["analytics"]
+      }
+    },
+    "/analytics/games/{gameId}/update": {
+      "get": {
+        "operationId": "AnalyticsController_updateGameAnalytics",
+        "parameters": [
+          {
+            "name": "gameId",
+            "required": true,
+            "in": "path",
+            "description": "ID of the game",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns updated game analytics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameAnalytics"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Game not found"
+          }
+        },
+        "summary": "Force update analytics for a specific game",
+        "tags": ["analytics"]
+      }
+    }
+  },
+  "info": {
+    "title": "Games Night API",
+    "description": "API for managing game nights, players, teams, and scoring",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "games",
+      "description": "Operations related to game management"
+    },
+    {
+      "name": "sessions",
+      "description": "Operations related to game sessions"
+    },
+    {
+      "name": "players",
+      "description": "Operations related to player management"
+    },
+    {
+      "name": "teams",
+      "description": "Operations related to team management"
+    },
+    {
+      "name": "scoring",
+      "description": "Operations related to scoring and leaderboards"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "Session": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Unique identifier of the session",
+            "example": 1
+          },
+          "sessionName": {
+            "type": "string",
+            "description": "Name of the session",
+            "example": "Friday Night Games"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether the session is currently active",
+            "example": true
+          },
+          "games": {
+            "description": "Games included in this session",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Game"
+            }
+          },
+          "players": {
+            "description": "Players participating in this session",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Player"
+            }
+          },
+          "startTime": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the session started",
+            "example": "2024-03-18T19:00:00Z"
+          },
+          "endTime": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the session ended",
+            "example": "2024-03-18T23:00:00Z"
+          },
+          "winner": {
+            "type": "string",
+            "description": "Winner of the session",
+            "example": "Player 1"
+          },
+          "difficulty": {
+            "type": "string",
+            "description": "Difficulty level of the session",
+            "example": "medium",
+            "enum": ["easy", "medium", "hard"]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the session was created",
+            "example": "2024-03-18T18:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the session was last updated",
+            "example": "2024-03-18T23:00:00Z"
+          },
+          "playerCount": {
+            "type": "number",
+            "description": "Number of players in the session"
+          }
+        },
+        "required": [
+          "id",
+          "sessionName",
+          "isActive",
+          "games",
+          "players",
+          "createdAt",
+          "updatedAt",
+          "playerCount"
+        ]
+      },
+      "Team": {
+        "type": "object",
+        "properties": {}
+      },
+      "Player": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Unique identifier of the player",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the player",
+            "example": "John Doe",
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "session": {
+            "description": "The session this player belongs to",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Session"
+              }
+            ]
+          },
+          "team": {
+            "description": "The team this player belongs to (if any)",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Team"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the player was created",
+            "example": "2024-03-18T19:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the player was last updated",
+            "example": "2024-03-18T23:00:00Z"
+          }
+        },
+        "required": ["id", "name", "session", "team", "createdAt", "updatedAt"]
+      },
+      "GameParticipant": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "The unique identifier for the game participant",
+            "example": 1
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the participant",
+            "enum": ["joined", "ready", "playing", "finished"],
+            "example": "joined"
+          },
+          "game": {
+            "description": "The game this participant is in",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Game"
+              }
+            ]
+          },
+          "player": {
+            "description": "The player participating in the game",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Player"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the participant joined",
+            "example": "2024-03-18T12:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the participant was last updated",
+            "example": "2024-03-18T12:00:00Z"
+          }
+        },
+        "required": ["id", "status", "game", "player", "createdAt", "updatedAt"]
+      },
+      "Game": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "The unique identifier for the game",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the game",
+            "example": "Charades"
+          },
+          "rules": {
+            "type": "string",
+            "description": "Rules of the game",
+            "example": "Act out a word without speaking"
+          },
+          "state": {
+            "type": "string",
+            "description": "Current state of the game",
+            "enum": ["setup", "ready", "in_progress", "paused", "completed"],
+            "example": "setup"
+          },
+          "currentRound": {
+            "type": "number",
+            "description": "Current round number",
+            "example": 1
+          },
+          "totalRounds": {
+            "type": "number",
+            "description": "Total number of rounds",
+            "example": 5
+          },
+          "analytics": {
+            "description": "Analytics for this game",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameAnalytics"
+            }
+          },
+          "participants": {
+            "description": "Participants in this game",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameParticipant"
+            }
+          },
+          "sessions": {
+            "description": "Sessions this game belongs to",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Session"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the game was created",
+            "example": "2024-03-18T12:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the game was last updated",
+            "example": "2024-03-18T12:00:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "state",
+          "analytics",
+          "participants",
+          "sessions",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "GameAnalytics": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "The unique identifier for the analytics",
+            "example": 1
+          },
+          "game": {
+            "description": "The game these analytics belong to",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Game"
+              }
+            ]
+          },
+          "totalPlays": {
+            "type": "number",
+            "description": "Total number of times this game has been played",
+            "example": 100
+          },
+          "averageDuration": {
+            "type": "number",
+            "description": "Average duration of a game session in minutes",
+            "example": 45
+          },
+          "averagePlayers": {
+            "type": "number",
+            "description": "Average number of players per session",
+            "example": 4
+          },
+          "statistics": {
+            "type": "object",
+            "description": "Detailed statistics in JSON format",
+            "example": {
+              "winRates": {
+                "Player 1": 0.6,
+                "Player 2": 0.4
+              },
+              "commonStrategies": ["Aggressive", "Defensive"],
+              "difficultyLevels": {
+                "easy": 0.3,
+                "medium": 0.5,
+                "hard": 0.2
+              }
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the analytics were created",
+            "example": "2024-03-18T12:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the analytics were last updated",
+            "example": "2024-03-18T12:00:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "game",
+          "totalPlays",
+          "averageDuration",
+          "averagePlayers",
+          "statistics",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateGameDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the game",
+            "example": "Charades"
+          },
+          "rules": {
+            "type": "string",
+            "description": "Rules of the game",
+            "example": "Act out a word without speaking"
+          }
+        },
+        "required": ["name"]
+      },
+      "GameSetupDto": {
+        "type": "object",
+        "properties": {
+          "totalRounds": {
+            "type": "number",
+            "description": "Total number of rounds for the game",
+            "example": 5
+          },
+          "config": {
+            "type": "string",
+            "description": "Additional game configuration in JSON format",
+            "example": {
+              "timeLimit": 60,
+              "difficulty": "medium"
+            }
+          }
+        },
+        "required": ["totalRounds"]
+      },
+      "AddPlayerDto": {
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "number",
+            "description": "ID of the player to add to the game",
+            "example": 1
+          }
+        },
+        "required": ["playerId"]
+      },
+      "CreateSessionDto": {
+        "type": "object",
+        "properties": {
+          "gameIds": {
+            "description": "Array of game IDs that will be played in this session",
+            "example": [1, 2, 3],
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "sessionName": {
+            "type": "string",
+            "description": "Name of the game session",
+            "example": "Friday Night Games",
+            "minLength": 3,
+            "maxLength": 100
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether the session is currently active",
+            "example": true,
+            "default": true
+          }
+        },
+        "required": ["sessionName"]
+      },
+      "UpdateSessionDto": {
+        "type": "object",
+        "properties": {
+          "sessionName": {
+            "type": "string",
+            "description": "New name for the game session",
+            "example": "Saturday Night Bash",
+            "minLength": 3,
+            "maxLength": 100
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether the session is currently active",
+            "example": false
+          }
+        }
+      },
+      "PlayerDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the player",
+            "example": "John Doe",
+            "minLength": 2,
+            "maxLength": 50
+          }
+        },
+        "required": ["name"]
+      },
+      "AssignPlayersDto": {
+        "type": "object",
+        "properties": {
+          "players": {
+            "description": "Array of players to add to the session",
+            "example": [
+              {
+                "name": "John Doe"
+              },
+              {
+                "name": "Jane Smith"
+              },
+              {
+                "name": "Mike Johnson"
+              }
+            ],
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerDto"
+            }
+          }
+        },
+        "required": ["players"]
+      },
+      "AddGamesDto": {
+        "type": "object",
+        "properties": {
+          "gameIds": {
+            "description": "Array of game IDs to add to the session",
+            "example": [1, 2, 3],
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": ["gameIds"]
+      },
+      "CreatePlayerDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the player",
+            "example": "John Doe",
+            "minLength": 2,
+            "maxLength": 50
+          }
+        },
+        "required": ["name"]
+      },
+      "PlayerScoreDto": {
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "number",
+            "description": "The ID of the player to add points to",
+            "example": 1
+          },
+          "gameId": {
+            "type": "number",
+            "description": "The ID of the game the points are for",
+            "example": 1
+          },
+          "points": {
+            "type": "number",
+            "description": "The number of points to add",
+            "example": 5
+          }
+        },
+        "required": ["playerId", "gameId", "points"]
+      },
+      "Score": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "The unique identifier for the score",
+            "example": 1
+          },
+          "points": {
+            "type": "number",
+            "description": "The number of points awarded",
+            "example": 5
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the score was created"
+          },
+          "game": {
+            "description": "The game this score belongs to",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Game"
+              }
+            ]
+          }
+        },
+        "required": ["id", "points", "createdAt", "game"]
+      },
+      "TeamScoreDto": {
+        "type": "object",
+        "properties": {
+          "teamId": {
+            "type": "number",
+            "description": "The ID of the team to add points to",
+            "example": 1
+          },
+          "gameId": {
+            "type": "number",
+            "description": "The ID of the game the points are for",
+            "example": 1
+          },
+          "points": {
+            "type": "number",
+            "description": "The number of points to add",
+            "example": 10
+          }
+        },
+        "required": ["teamId", "gameId", "points"]
+      }
+    }
+  }
+}

@@ -53,7 +53,7 @@ export default function GamesPage() {
     const matchesStatus = statusFilter === "all" || game.state === statusFilter;
     const matchesSession =
       sessionFilter === "all" ||
-      (game.sessionId && Number(game.sessionId) === Number(sessionFilter));
+      game.sessions.some(session => session.id === Number(sessionFilter));
     return matchesSearch && matchesStatus && matchesSession;
   });
 
@@ -209,8 +209,8 @@ export default function GamesPage() {
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
                     Session:{" "}
-                    {game.sessionId
-                      ? sessions.find((s) => s.id === Number(game.sessionId))
+                    {game.sessions.length > 0
+                      ? sessions.find((s) => s.id === game.sessions[0].id)
                           ?.sessionName || "Unknown"
                       : "No Session"}
                   </p>

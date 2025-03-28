@@ -3,8 +3,9 @@ import {
   GameStoreState,
   CreateGameDto,
   GameSetupDto,
-  PlayerReadyDto,
-  Game
+  AddPlayerDto,
+  Game,
+  GameParticipant
 } from "@/types/game";
 // Update the import path to correct location
 import { api } from "@/services/api";
@@ -47,11 +48,51 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         onScoreUpdate: (data) => {
           set((state) => ({
             games: state.games.map((g: Game) =>
-              g.id.toString() === gameId ? { ...g, scores: data.scores } : g
+              g.id.toString() === gameId 
+                ? { 
+                    ...g, 
+                    scores: data.scores,
+                    teamScores: data.teamScores,
+                    analytics: g.analytics.map(analytics => ({
+                      ...analytics,
+                      statistics: {
+                        ...analytics.statistics,
+                        scoreHistory: [
+                          ...(analytics.statistics.scoreHistory || []),
+                          ...data.scores.map(score => ({
+                            playerId: parseInt(score.playerId),
+                            playerName: g.participants.find(p => p.player.id.toString() === score.playerId)?.player.name || `Player ${score.playerId}`,
+                            points: score.score,
+                            timestamp: new Date().toISOString()
+                          }))
+                        ]
+                      }
+                    }))
+                  } 
+                : g
             ),
             currentGame:
               state.currentGame?.id.toString() === gameId
-                ? { ...state.currentGame, scores: data.scores }
+                ? { 
+                    ...state.currentGame, 
+                    scores: data.scores,
+                    teamScores: data.teamScores,
+                    analytics: state.currentGame.analytics.map(analytics => ({
+                      ...analytics,
+                      statistics: {
+                        ...analytics.statistics,
+                        scoreHistory: [
+                          ...(analytics.statistics.scoreHistory || []),
+                          ...data.scores.map(score => ({
+                            playerId: parseInt(score.playerId),
+                            playerName: state.currentGame!.participants.find(p => p.player.id.toString() === score.playerId)?.player.name || `Player ${score.playerId}`,
+                            points: score.score,
+                            timestamp: new Date().toISOString()
+                          }))
+                        ]
+                      }
+                    }))
+                  }
                 : state.currentGame,
           }));
         },
@@ -66,6 +107,19 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
                 : state.currentGame,
           }));
         },
+        onTeamScoreUpdate: (data) => {
+          set((state) => ({
+            games: state.games.map((g: Game) =>
+              g.id.toString() === gameId 
+                ? { ...g, teamScores: data.teamScores } 
+                : g
+            ),
+            currentGame:
+              state.currentGame?.id.toString() === gameId
+                ? { ...state.currentGame, teamScores: data.teamScores }
+                : state.currentGame,
+          }));
+        }
       });
     }
   },
@@ -90,7 +144,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
   setupGame: async (id: string, data: GameSetupDto) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post(`/games/${id}/setup`, data);
+      const response = await api.put(`/games/${id}/setup`, data);
       const updatedGame = response.data;
       set((state) => ({
         games: state.games.map((g) => (g.id === Number(id) ? updatedGame : g)),
@@ -107,20 +161,64 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     }
   },
 
-  playerReady: async (id: string, data: PlayerReadyDto) => {
+  addPlayer: async (id: string, data: AddPlayerDto) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post(`/games/${id}/ready`, data);
-      const updatedGame = response.data;
+      const response = await api.post(`/games/${id}/players`, data);
+      const newParticipant = response.data;
       set((state) => ({
-        games: state.games.map((g) => (g.id === Number(id) ? updatedGame : g)),
+        games: state.games.map((g) => 
+          g.id === Number(id) 
+            ? { 
+                ...g, 
+                participants: [...g.participants, newParticipant] 
+              }
+            : g
+        ),
         currentGame:
           state.currentGame?.id === Number(id)
-            ? updatedGame
+            ? { 
+                ...state.currentGame, 
+                participants: [...state.currentGame.participants, newParticipant] 
+              }
             : state.currentGame,
         isLoading: false,
       }));
-      return updatedGame;
+      return newParticipant;
+    } catch (err) {
+      set({ error: "Failed to add player", isLoading: false });
+      throw err;
+    }
+  },
+
+  playerReady: async (id: string, playerId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.put(`/games/${id}/players/${playerId}/ready`);
+      const updatedParticipant = response.data;
+      set((state) => ({
+        games: state.games.map((g) => 
+          g.id === Number(id)
+            ? {
+                ...g,
+                participants: g.participants.map(p =>
+                  p.id === updatedParticipant.id ? updatedParticipant : p
+                )
+              }
+            : g
+        ),
+        currentGame:
+          state.currentGame?.id === Number(id)
+            ? {
+                ...state.currentGame,
+                participants: state.currentGame.participants.map(p =>
+                  p.id === updatedParticipant.id ? updatedParticipant : p
+                )
+              }
+            : state.currentGame,
+        isLoading: false,
+      }));
+      return updatedParticipant;
     } catch (err) {
       set({ error: "Failed to update player ready status", isLoading: false });
       throw err;
@@ -187,67 +285,34 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     }
   },
 
-  joinGame: async (id: string) => {
+  removePlayer: async (id: string, playerId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post(`/games/${id}/join`, { role: "player" });
-      const updatedGame = response.data;
+      await api.delete(`/games/${id}/players/${playerId}`);
       set((state) => ({
-        games: state.games.map((g) => (g.id === Number(id) ? updatedGame : g)),
+        games: state.games.map((g) => 
+          g.id === Number(id)
+            ? {
+                ...g,
+                participants: g.participants.filter(p => p.id !== Number(playerId))
+              }
+            : g
+        ),
         currentGame:
           state.currentGame?.id === Number(id)
-            ? updatedGame
+            ? {
+                ...state.currentGame,
+                participants: state.currentGame.participants.filter(p => p.id !== Number(playerId))
+              }
             : state.currentGame,
         isLoading: false,
       }));
-      return updatedGame;
     } catch (err) {
-      set({ error: "Failed to join game", isLoading: false });
+      set({ error: "Failed to remove player", isLoading: false });
       throw err;
     }
   },
 
-  leaveGame: async (id: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await api.post(`/games/${id}/leave`);
-      const updatedGame = response.data;
-      set((state) => ({
-        games: state.games.map((g) => (g.id === Number(id) ? updatedGame : g)),
-        currentGame:
-          state.currentGame?.id === Number(id)
-            ? updatedGame
-            : state.currentGame,
-        isLoading: false,
-      }));
-      return updatedGame;
-    } catch (err) {
-      set({ error: "Failed to leave game", isLoading: false });
-      throw err;
-    }
-  },
-
-  endGame: async (id: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await api.post(`/games/${id}/end`);
-      const updatedGame = response.data;
-      set((state) => ({
-        games: state.games.map((g) => (g.id === Number(id) ? updatedGame : g)),
-        currentGame:
-          state.currentGame?.id === Number(id)
-            ? updatedGame
-            : state.currentGame,
-        isLoading: false,
-      }));
-      return updatedGame;
-    } catch (err) {
-      set({ error: "Failed to end game", isLoading: false });
-      throw err;
-    }
-  },
-
-  // Cleanup function to unsubscribe from WebSocket events
   cleanup: () => {
     const currentGame = get().currentGame;
     if (currentGame) {

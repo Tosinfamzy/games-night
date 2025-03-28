@@ -1,16 +1,31 @@
 export type GameType = "monopoly" | "uno" | "chess" | "checkers" | "custom";
 export type GameStatus = "pending" | "active" | "completed" | "cancelled";
-export type GamePhase =
-  | "setup"
-  | "ready"
-  | "in_progress"
-  | "paused"
-  | "completed";
+export type GamePhase = "setup" | "ready" | "in_progress" | "paused" | "completed";
 
 export interface Player {
-  id: string;
+  id: number;
   name: string;
-  joinedAt: string;
+  session?: {
+    id: number;
+    sessionName: string;
+  };
+  team?: {
+    id: number;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GameParticipant {
+  id: number;
+  status: 'joined' | 'ready' | 'playing' | 'finished';
+  player: {
+    id: number;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface GameSettings {
@@ -28,7 +43,7 @@ export interface GameSetupDto {
   config?: string;
 }
 
-export interface PlayerReadyDto {
+export interface AddPlayerDto {
   playerId: number;
 }
 
@@ -37,16 +52,36 @@ export interface Game {
   name: string;
   rules?: string;
   state: GamePhase;
-  currentRound: number;
-  totalRounds: number;
+  currentRound?: number;
+  totalRounds?: number;
   analytics: GameAnalytics[];
+  participants: GameParticipant[];
+  scores?: Array<{
+    playerId: string;
+    score: number;
+  }>;
+  teamScores?: Array<{
+    teamId: string;
+    score: number;
+  }>;
+  sessions: Array<{
+    id: number;
+    sessionName: string;
+    isActive: boolean;
+    players: Player[];
+    startTime?: string;
+    endTime?: string;
+    winner?: string;
+    difficulty?: 'easy' | 'medium' | 'hard';
+    createdAt: string;
+    updatedAt: string;
+    playerCount: number;
+  }>;
   createdAt: string;
   updatedAt: string;
-  sessionId?: string;
-  createdBy?: string;
-  currentPlayers: string[];
+  createdBy: string;
   status: GameStatus;
-  type?: GameType;
+  type?: string;
   maxPlayers?: number;
   minPlayers?: number;
   customRules?: string;
@@ -62,6 +97,12 @@ export interface GameAnalytics {
     winRates?: Record<string, number>;
     commonStrategies?: string[];
     difficultyLevels?: Record<string, number>;
+    scoreHistory?: Array<{
+      playerId: number;
+      playerName: string;
+      points: number;
+      timestamp: string;
+    }>;
   };
   createdAt: string;
   updatedAt: string;
@@ -78,15 +119,12 @@ export interface GameStoreState {
   setCurrentGame: (gameId: string) => void;
   createGame: (data: CreateGameDto) => Promise<Game>;
   setupGame: (id: string, data: GameSetupDto) => Promise<Game>;
-  playerReady: (id: string, data: PlayerReadyDto) => Promise<Game>;
+  addPlayer: (id: string, data: AddPlayerDto) => Promise<GameParticipant>;
+  playerReady: (id: string, playerId: string) => Promise<GameParticipant>;
   startGame: (id: string) => Promise<Game>;
   completeGame: (id: string) => Promise<Game>;
   updateGameState: (id: string) => Promise<Game>;
-
-  // Game management
-  joinGame: (id: string) => Promise<Game>;
-  leaveGame: (id: string) => Promise<Game>;
-  endGame: (id: string) => Promise<Game>;
+  removePlayer: (id: string, playerId: string) => Promise<void>;
 
   cleanup: () => void;
 }

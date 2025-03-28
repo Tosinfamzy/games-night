@@ -7,9 +7,15 @@ interface GameScore {
   score: number;
 }
 
+interface TeamScore {
+  teamId: string;
+  score: number;
+}
+
 interface GameScoreUpdate {
   gameId: string;
   scores: GameScore[];
+  teamScores?: TeamScore[];
 }
 
 interface GameStateUpdate {
@@ -32,9 +38,17 @@ interface TeamUpdate {
   teams: BaseTeam[];
 }
 
+interface TeamScoreUpdate {
+  gameId: string;
+  teamScores: TeamScore[];
+}
+
 class WebSocketService {
   private socket: Socket | null = null;
   private static instance: WebSocketService;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectDelay = 1000;
 
   private constructor() {}
 
@@ -82,6 +96,7 @@ class WebSocketService {
     callbacks: {
       onScoreUpdate?: (data: GameScoreUpdate) => void;
       onStateUpdate?: (data: GameStateUpdate) => void;
+      onTeamScoreUpdate?: (data: TeamScoreUpdate) => void;
     }
   ) {
     if (!this.socket) return;
@@ -95,6 +110,10 @@ class WebSocketService {
     if (callbacks.onStateUpdate) {
       this.socket.on(`game:${gameId}:state`, callbacks.onStateUpdate);
     }
+
+    if (callbacks.onTeamScoreUpdate) {
+      this.socket.on(`game:${gameId}:teamScore`, callbacks.onTeamScoreUpdate);
+    }
   }
 
   unsubscribeFromGame(gameId: string) {
@@ -103,6 +122,7 @@ class WebSocketService {
     this.socket.emit("leave:game", { gameId });
     this.socket.off(`game:${gameId}:score`);
     this.socket.off(`game:${gameId}:state`);
+    this.socket.off(`game:${gameId}:teamScore`);
   }
 
   // Session events

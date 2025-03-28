@@ -26,7 +26,7 @@ export default function Home() {
   }, [fetchGames, fetchSessions]);
 
   const activeSessions = sessions.filter(
-    (session) => session.status === "active"
+    (session) => session.isActive
   );
 
   return (
@@ -39,9 +39,6 @@ export default function Home() {
               Games Night
             </Link>
             <div className="flex gap-4">
-              <Link href="/games">
-                <Button variant="ghost">Browse Games</Button>
-              </Link>
               <Button onClick={() => setIsCreateModalOpen(true)}>
                 Create New Session
               </Button>
@@ -217,7 +214,7 @@ export default function Home() {
                         <p className="text-gray-700 flex items-center">
                           <span className="font-medium">Players:</span>
                           <span className="ml-2">
-                            {(game.currentPlayers || []).length}/
+                            {(game.participants || []).length}/
                             {game.maxPlayers || 0}
                           </span>
                         </p>
@@ -294,47 +291,56 @@ export default function Home() {
               ))}
             </div>
           ) : activeSessions.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2">
-              {activeSessions.map((session) => (
-                <Card
-                  key={session.id}
-                  className="p-6 hover:shadow-lg transition-shadow"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900">
-                        {session.sessionName}
-                      </h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Started{" "}
-                        {new Date(session.createdAt).toLocaleDateString()}
-                      </p>
+            <>
+              <div className="grid gap-6 md:grid-cols-2">
+                {activeSessions.slice(0, 3).map((session) => (
+                  <Card
+                    key={session.id}
+                    className="p-6 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-semibold text-gray-900">
+                          {session.sessionName}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Started{" "}
+                          {new Date(session.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Badge variant="success">Active</Badge>
                     </div>
-                    <Badge variant="success">Active</Badge>
-                  </div>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <span className="font-medium">Games:</span>
-                      <span className="ml-2">{session.games?.length || 0}</span>
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <span className="font-medium">Games:</span>
+                        <span className="ml-2">{session.games?.length || 0}</span>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <span className="font-medium">Players:</span>
+                        <span className="ml-2">
+                          {session.players?.length || 0}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <span className="font-medium">Players:</span>
-                      <span className="ml-2">
-                        {session.players?.length || 0}
-                      </span>
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={() => router.push(`/sessions/${session.id}`)}
+                        variant="outline"
+                      >
+                        Join Session
+                      </Button>
                     </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <Button
-                      onClick={() => router.push(`/sessions/${session.id}`)}
-                      variant="outline"
-                    >
-                      Join Session
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                  </Card>
+                ))}
+              </div>
+              {activeSessions.length > 3 && (
+                <div className="flex justify-center mt-8">
+                  <Link href="/sessions">
+                    <Button variant="outline">View All Sessions</Button>
+                  </Link>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
