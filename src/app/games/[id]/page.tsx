@@ -56,6 +56,20 @@ interface GameAnalytics {
   };
 }
 
+interface GameLeaderboard {
+  playerId: number;
+  playerName: string;
+  points: number;
+  rank: number;
+}
+
+interface SessionScores {
+  playerId: number;
+  playerName: string;
+  totalPoints: number;
+  gamesPlayed: number;
+}
+
 export default function GamePage() {
   const params = useParams();
   const router = useRouter();
@@ -63,8 +77,8 @@ export default function GamePage() {
   const [newScore, setNewScore] = useState<Record<string, number>>({});
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [gameLeaderboard, setGameLeaderboard] = useState<any>(null);
-  const [sessionScores, setSessionScores] = useState<any>(null);
+  const [gameLeaderboard, setGameLeaderboard] = useState<GameLeaderboard[] | null>(null);
+  const [sessionScores, setSessionScores] = useState<SessionScores[] | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | "">("");
   const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [addPlayerError, setAddPlayerError] = useState<string | null>(null);
@@ -168,21 +182,22 @@ export default function GamePage() {
     subscribeToScores();
   }, [currentGame?.sessions]);
 
-  // Add new effect to fetch game players
-  useEffect(() => {
-    async function fetchGamePlayers() {
-      if (!gameId) return;
+  // Extract fetchGamePlayers function to be reusable
+  const fetchGamePlayers = async () => {
+    if (!gameId) return;
 
-      try {
-        const response = await api.get<GamePlayersResponse>(
-          `/games/${gameId}/players`
-        );
-        setGamePlayers(response.data);
-      } catch (error) {
-        console.error("Failed to fetch game players:", error);
-      }
+    try {
+      const response = await api.get<GamePlayersResponse>(
+        `/games/${gameId}/players`
+      );
+      setGamePlayers(response.data);
+    } catch (error) {
+      console.error("Failed to fetch game players:", error);
     }
+  };
 
+  // Update useEffect to use the extracted function
+  useEffect(() => {
     fetchGamePlayers();
   }, [gameId]);
 
@@ -357,10 +372,11 @@ export default function GamePage() {
     }
   };
 
-  const onPlayerAdded = (player: BasePlayer) => {
-    if (currentSession) {
-      fetchSession(currentSession.id.toString());
-    }
+  const onPlayerAdded = () => {
+    setIsAddingPlayer(false);
+    setAddPlayerError(null);
+    // Refresh game players list
+    fetchGamePlayers();
   };
 
   // Get available players (players in session who aren't in the game)
@@ -482,26 +498,19 @@ export default function GamePage() {
               </h2>
               <div className="space-y-4">
                 {gameLeaderboard &&
-                  Object.entries(gameLeaderboard).map(
-                    ([playerId, score]: [string, any]) => {
-                      const player = gamePlayers?.players.find(
-                        (p) => p.id.toString() === playerId
-                      );
-                      return (
-                        <div
-                          key={playerId}
-                          className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-md"
-                        >
-                          <span className="font-medium text-gray-900">
-                            {player?.name || `Player ${playerId}`}
-                          </span>
-                          <span className="font-medium text-gray-900">
-                            {score} points
-                          </span>
-                        </div>
-                      );
-                    }
-                  )}
+                  gameLeaderboard.map((player) => (
+                    <div
+                      key={player.playerId}
+                      className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-md"
+                    >
+                      <span className="font-medium text-gray-900">
+                        {player.playerName}
+                      </span>
+                      <span className="font-medium text-gray-900">
+                        {player.points} points
+                      </span>
+                    </div>
+                  ))}
               </div>
             </div>
           </Card>
@@ -514,26 +523,19 @@ export default function GamePage() {
               </h2>
               <div className="space-y-4">
                 {sessionScores &&
-                  Object.entries(sessionScores).map(
-                    ([playerId, score]: [string, any]) => {
-                      const player = gamePlayers?.players.find(
-                        (p) => p.id.toString() === playerId
-                      );
-                      return (
-                        <div
-                          key={playerId}
-                          className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-md"
-                        >
-                          <span className="font-medium text-gray-900">
-                            {player?.name || `Player ${playerId}`}
-                          </span>
-                          <span className="font-medium text-gray-900">
-                            {score} points
-                          </span>
-                        </div>
-                      );
-                    }
-                  )}
+                  sessionScores.map((player) => (
+                    <div
+                      key={player.playerId}
+                      className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-md"
+                    >
+                      <span className="font-medium text-gray-900">
+                        {player.playerName}
+                      </span>
+                      <span className="font-medium text-gray-900">
+                        {player.totalPoints} points
+                      </span>
+                    </div>
+                  ))}
               </div>
             </div>
           </Card>
