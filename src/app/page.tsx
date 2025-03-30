@@ -25,9 +25,7 @@ export default function Home() {
     fetchSessions();
   }, [fetchGames, fetchSessions]);
 
-  const activeSessions = sessions.filter(
-    (session) => session.isActive
-  );
+  const activeSessions = sessions.filter((session) => session.isActive);
 
   return (
     <div className="min-h-screen bg-white">
@@ -313,7 +311,9 @@ export default function Home() {
                     <div className="space-y-2 mb-4">
                       <div className="flex items-center text-sm text-gray-600">
                         <span className="font-medium">Games:</span>
-                        <span className="ml-2">{session.games?.length || 0}</span>
+                        <span className="ml-2">
+                          {session.games?.length || 0}
+                        </span>
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <span className="font-medium">Players:</span>
