@@ -5,7 +5,6 @@ import {
   GameSetupDto,
   AddPlayerDto,
   Game,
-  GameParticipant
 } from "@/types/game";
 // Update the import path to correct location
 import { api } from "@/services/api";
@@ -23,7 +22,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       const response = await api.get("/games");
       const games = response.data;
       set({ games, isLoading: false });
-      
+
       // Update currentGame if we have a game selected
       const currentGame = get().currentGame;
       if (currentGame) {
@@ -48,50 +47,56 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         onScoreUpdate: (data) => {
           set((state) => ({
             games: state.games.map((g: Game) =>
-              g.id.toString() === gameId 
-                ? { 
-                    ...g, 
+              g.id.toString() === gameId
+                ? {
+                    ...g,
                     scores: data.scores,
                     teamScores: data.teamScores,
-                    analytics: g.analytics.map(analytics => ({
+                    analytics: g.analytics.map((analytics) => ({
                       ...analytics,
                       statistics: {
                         ...analytics.statistics,
                         scoreHistory: [
                           ...(analytics.statistics.scoreHistory || []),
-                          ...data.scores.map(score => ({
+                          ...data.scores.map((score) => ({
                             playerId: parseInt(score.playerId),
-                            playerName: g.participants.find(p => p.player.id.toString() === score.playerId)?.player.name || `Player ${score.playerId}`,
+                            playerName:
+                              g.participants.find(
+                                (p) => p.player.id.toString() === score.playerId
+                              )?.player.name || `Player ${score.playerId}`,
                             points: score.score,
-                            timestamp: new Date().toISOString()
-                          }))
-                        ]
-                      }
-                    }))
-                  } 
+                            timestamp: new Date().toISOString(),
+                          })),
+                        ],
+                      },
+                    })),
+                  }
                 : g
             ),
             currentGame:
               state.currentGame?.id.toString() === gameId
-                ? { 
-                    ...state.currentGame, 
+                ? {
+                    ...state.currentGame,
                     scores: data.scores,
                     teamScores: data.teamScores,
-                    analytics: state.currentGame.analytics.map(analytics => ({
+                    analytics: state.currentGame.analytics.map((analytics) => ({
                       ...analytics,
                       statistics: {
                         ...analytics.statistics,
                         scoreHistory: [
                           ...(analytics.statistics.scoreHistory || []),
-                          ...data.scores.map(score => ({
+                          ...data.scores.map((score) => ({
                             playerId: parseInt(score.playerId),
-                            playerName: state.currentGame!.participants.find(p => p.player.id.toString() === score.playerId)?.player.name || `Player ${score.playerId}`,
+                            playerName:
+                              state.currentGame!.participants.find(
+                                (p) => p.player.id.toString() === score.playerId
+                              )?.player.name || `Player ${score.playerId}`,
                             points: score.score,
-                            timestamp: new Date().toISOString()
-                          }))
-                        ]
-                      }
-                    }))
+                            timestamp: new Date().toISOString(),
+                          })),
+                        ],
+                      },
+                    })),
                   }
                 : state.currentGame,
           }));
@@ -110,8 +115,8 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
         onTeamScoreUpdate: (data) => {
           set((state) => ({
             games: state.games.map((g: Game) =>
-              g.id.toString() === gameId 
-                ? { ...g, teamScores: data.teamScores } 
+              g.id.toString() === gameId
+                ? { ...g, teamScores: data.teamScores }
                 : g
             ),
             currentGame:
@@ -119,7 +124,7 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
                 ? { ...state.currentGame, teamScores: data.teamScores }
                 : state.currentGame,
           }));
-        }
+        },
       });
     }
   },
@@ -167,19 +172,22 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       const response = await api.post(`/games/${id}/players`, data);
       const newParticipant = response.data;
       set((state) => ({
-        games: state.games.map((g) => 
-          g.id === Number(id) 
-            ? { 
-                ...g, 
-                participants: [...g.participants, newParticipant] 
+        games: state.games.map((g) =>
+          g.id === Number(id)
+            ? {
+                ...g,
+                participants: [...g.participants, newParticipant],
               }
             : g
         ),
         currentGame:
           state.currentGame?.id === Number(id)
-            ? { 
-                ...state.currentGame, 
-                participants: [...state.currentGame.participants, newParticipant] 
+            ? {
+                ...state.currentGame,
+                participants: [
+                  ...state.currentGame.participants,
+                  newParticipant,
+                ],
               }
             : state.currentGame,
         isLoading: false,
@@ -197,13 +205,13 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       const response = await api.put(`/games/${id}/players/${playerId}/ready`);
       const updatedParticipant = response.data;
       set((state) => ({
-        games: state.games.map((g) => 
+        games: state.games.map((g) =>
           g.id === Number(id)
             ? {
                 ...g,
-                participants: g.participants.map(p =>
+                participants: g.participants.map((p) =>
                   p.id === updatedParticipant.id ? updatedParticipant : p
-                )
+                ),
               }
             : g
         ),
@@ -211,9 +219,9 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
           state.currentGame?.id === Number(id)
             ? {
                 ...state.currentGame,
-                participants: state.currentGame.participants.map(p =>
+                participants: state.currentGame.participants.map((p) =>
                   p.id === updatedParticipant.id ? updatedParticipant : p
-                )
+                ),
               }
             : state.currentGame,
         isLoading: false,
@@ -290,11 +298,13 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     try {
       await api.delete(`/games/${id}/players/${playerId}`);
       set((state) => ({
-        games: state.games.map((g) => 
+        games: state.games.map((g) =>
           g.id === Number(id)
             ? {
                 ...g,
-                participants: g.participants.filter(p => p.id !== Number(playerId))
+                participants: g.participants.filter(
+                  (p) => p.id !== Number(playerId)
+                ),
               }
             : g
         ),
@@ -302,7 +312,9 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
           state.currentGame?.id === Number(id)
             ? {
                 ...state.currentGame,
-                participants: state.currentGame.participants.filter(p => p.id !== Number(playerId))
+                participants: state.currentGame.participants.filter(
+                  (p) => p.id !== Number(playerId)
+                ),
               }
             : state.currentGame,
         isLoading: false,
