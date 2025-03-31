@@ -62,7 +62,8 @@ class WebSocketService {
   connect() {
     if (!this.socket) {
       this.socket = io(
-        process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3000",
+        process.env.NEXT_PUBLIC_WS_URL ||
+          "ws://https://games-night-api.onrender.com",
         {
           transports: ["websocket"],
           autoConnect: true,
