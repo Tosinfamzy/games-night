@@ -9,31 +9,48 @@ import Link from "next/link";
 import { api } from "@/services/api";
 import { SessionManager } from "@/components/sessions/SessionManager";
 import { GameFormData } from "@/types/game";
+import { CreateHostPlayerModal } from "@/components/sessions/CreateHostPlayerModal";
 
 export default function SessionPage() {
   const router = useRouter();
   const params = useParams();
   const sessionId = params.id as string;
   const [isCreateGameModalOpen, setIsCreateGameModalOpen] = useState(false);
+  const [isHostModalOpen, setIsHostModalOpen] = useState(false);
   const {
     currentSession,
     isLoading: isSessionLoading,
     error: sessionError,
     fetchSession,
     endSession,
+    hostId,
+    setHostId,
   } = useSessionStore();
 
   useEffect(() => {
-    if (sessionId) {
+    if (sessionId && hostId) {
       fetchSession(sessionId);
+    } else if (sessionId && !hostId) {
+      setIsHostModalOpen(true);
     }
-  }, [sessionId, fetchSession]);
+  }, [sessionId, fetchSession, hostId]);
+
+  const handleHostCreated = (newHostId: number) => {
+    setHostId(newHostId);
+    setIsHostModalOpen(false);
+    fetchSession(sessionId);
+  };
 
   const handleAddGames = async (selectedGameIds: number[]) => {
+    if (!hostId) {
+      setIsHostModalOpen(true);
+      return;
+    }
+
     try {
-      // Use the api instance directly with the correct endpoint
       await api.post(`/sessions/${sessionId}/games`, {
         gameIds: selectedGameIds,
+        hostId: hostId,
       });
       await fetchSession(sessionId);
       setIsCreateGameModalOpen(false);
@@ -43,9 +60,13 @@ export default function SessionPage() {
   };
 
   const handleCreateGame = async (gameData: GameFormData) => {
+    if (!hostId) {
+      setIsHostModalOpen(true);
+      return;
+    }
+
     try {
-      // Use the api instance directly with the correct endpoint
-      await api.post("/games", { ...gameData, sessionId });
+      await api.post("/games", { ...gameData, sessionId, hostId });
       await fetchSession(sessionId);
       setIsCreateGameModalOpen(false);
     } catch (error) {
@@ -54,9 +75,13 @@ export default function SessionPage() {
   };
 
   const handleStartGame = async (gameId: number) => {
+    if (!hostId) {
+      setIsHostModalOpen(true);
+      return;
+    }
+
     try {
-      // Use the api instance directly with the correct endpoint
-      await api.post(`/games/${gameId}/start`);
+      await api.post(`/games/${gameId}/start`, { hostId });
       await fetchSession(sessionId);
     } catch (error) {
       console.error("Failed to start game:", error);
@@ -64,10 +89,14 @@ export default function SessionPage() {
   };
 
   const handleEndGame = async (gameId: number) => {
+    if (!hostId) {
+      setIsHostModalOpen(true);
+      return;
+    }
+
     if (confirm("Are you sure you want to end this game?")) {
       try {
-        // Use the api instance directly with the correct endpoint
-        await api.post(`/games/${gameId}/end`);
+        await api.post(`/games/${gameId}/end`, { hostId });
         await fetchSession(sessionId);
       } catch (error) {
         console.error("Failed to end game:", error);
@@ -76,6 +105,11 @@ export default function SessionPage() {
   };
 
   const handleEndSession = async () => {
+    if (!hostId) {
+      setIsHostModalOpen(true);
+      return;
+    }
+
     if (confirm("Are you sure you want to end this session?")) {
       try {
         await endSession(sessionId);
@@ -85,6 +119,30 @@ export default function SessionPage() {
       }
     }
   };
+
+  if (!hostId) {
+    return (
+      <div className="w-full min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="text-center py-8 text-gray-900">
+            <h1 className="text-2xl font-bold mb-4">Host Player Required</h1>
+            <p className="mb-6">
+              You need to create a host player before accessing this session.
+            </p>
+            <Button onClick={() => setIsHostModalOpen(true)}>
+              Create Host Player
+            </Button>
+
+            <CreateHostPlayerModal
+              isOpen={isHostModalOpen}
+              onClose={() => router.push("/sessions")}
+              onSuccess={handleHostCreated}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isSessionLoading) {
     return (
@@ -210,6 +268,12 @@ export default function SessionPage() {
         onClose={() => setIsCreateGameModalOpen(false)}
         onSubmit={handleAddGames}
         onCreateGame={handleCreateGame}
+      />
+
+      <CreateHostPlayerModal
+        isOpen={isHostModalOpen}
+        onClose={() => router.push("/sessions")}
+        onSuccess={handleHostCreated}
       />
     </main>
   );

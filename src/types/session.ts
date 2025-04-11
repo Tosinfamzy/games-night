@@ -58,6 +58,7 @@ export interface BaseSession {
   winner?: string;
   difficulty?: "easy" | "medium" | "hard";
   playerCount?: number;
+  hostId: number;
 }
 
 export type SessionStatus = "active" | "completed" | "cancelled";

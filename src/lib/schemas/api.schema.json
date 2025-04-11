@@ -100,7 +100,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["joined", "ready", "playing", "finished"]
+                            "enum": ["joined", "ready"]
                           },
                           "joinedAt": {
                             "type": "string",
@@ -396,17 +396,33 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Only hosts can create sessions"
+          },
+          "404": {
+            "description": "Host player not found"
           }
         },
-        "summary": "Create a new game session",
+        "summary": "Create a new game session (Host only)",
         "tags": ["sessions"]
       },
       "get": {
         "operationId": "SessionsController_findAll",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "hostId",
+            "required": true,
+            "in": "query",
+            "description": "ID of the host",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "List of all sessions",
+            "description": "List of all sessions for the host",
             "content": {
               "application/json": {
                 "schema": {
@@ -417,9 +433,12 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Only hosts can view sessions"
           }
         },
-        "summary": "Get all sessions",
+        "summary": "Get all sessions for a host",
         "tags": ["sessions"]
       }
     },
@@ -435,6 +454,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "hostId",
+            "required": true,
+            "in": "query",
+            "description": "ID of the host",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -447,6 +475,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Only hosts can view sessions"
           },
           "404": {
             "description": "Session not found"
@@ -489,6 +520,9 @@
               }
             }
           },
+          "403": {
+            "description": "Only the host can update their sessions"
+          },
           "404": {
             "description": "Session not found"
           }
@@ -507,11 +541,23 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "hostId",
+            "required": true,
+            "in": "query",
+            "description": "ID of the host",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
         "responses": {
           "204": {
             "description": "Session deleted successfully"
+          },
+          "403": {
+            "description": "Only the host can delete their sessions"
           },
           "404": {
             "description": "Session not found"
@@ -533,6 +579,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "hostId",
+            "required": true,
+            "in": "query",
+            "description": "ID of the host",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -548,6 +603,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Only the host can view session players"
           },
           "404": {
             "description": "Session not found"
@@ -610,6 +668,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "hostId",
+            "required": true,
+            "in": "query",
+            "description": "ID of the host",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -625,6 +692,9 @@
           },
           "400": {
             "description": "Invalid number of teams"
+          },
+          "403": {
+            "description": "Only the host can create teams in their sessions"
           },
           "404": {
             "description": "Session not found"
@@ -646,6 +716,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "hostId",
+            "required": true,
+            "in": "query",
+            "description": "ID of the host",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -661,6 +740,9 @@
           },
           "400": {
             "description": "Invalid team configuration"
+          },
+          "403": {
+            "description": "Only the host can create teams in their sessions"
           },
           "404": {
             "description": "Session not found"
@@ -682,6 +764,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "hostId",
+            "required": true,
+            "in": "query",
+            "description": "ID of the host",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -690,6 +781,9 @@
           },
           "400": {
             "description": "Invalid session state"
+          },
+          "403": {
+            "description": "Only the host can start their sessions"
           }
         },
         "summary": "Start a session",
@@ -708,6 +802,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "hostId",
+            "required": true,
+            "in": "query",
+            "description": "ID of the host",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -716,6 +819,9 @@
           },
           "400": {
             "description": "Invalid session state"
+          },
+          "403": {
+            "description": "Only the host can end their sessions"
           }
         },
         "summary": "End a session",
@@ -734,6 +840,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "hostId",
+            "required": true,
+            "in": "query",
+            "description": "ID of the host",
+            "schema": {
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -742,6 +857,9 @@
           },
           "400": {
             "description": "No more games available"
+          },
+          "403": {
+            "description": "Only the host can change games in their sessions"
           }
         },
         "summary": "Move to the next game in the session",
@@ -864,9 +982,18 @@
                 "example1": {
                   "value": {
                     "name": "John Doe",
-                    "sessionId": 1
+                    "sessionId": 1,
+                    "type": "participant"
                   },
-                  "description": "Example of adding a new player"
+                  "description": "Example of adding a new participant"
+                },
+                "example2": {
+                  "value": {
+                    "name": "Jane Host",
+                    "sessionId": 1,
+                    "type": "host"
+                  },
+                  "description": "Example of adding a host"
                 }
               }
             }
@@ -888,6 +1015,39 @@
           }
         },
         "summary": "Add a new player to a session",
+        "tags": ["players"]
+      }
+    },
+    "/players/host": {
+      "post": {
+        "operationId": "PlayersController_createHost",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHostPlayerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The host player has been successfully created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Player"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found."
+          }
+        },
+        "summary": "Create a new host player",
         "tags": ["players"]
       }
     },
@@ -1217,6 +1377,11 @@
             "description": "Unique identifier of the session",
             "example": 1
           },
+          "hostId": {
+            "type": "number",
+            "description": "ID of the host who created this session",
+            "example": 1
+          },
           "sessionName": {
             "type": "string",
             "description": "Name of the session",
@@ -1258,12 +1423,6 @@
             "description": "Winner of the session",
             "example": "Player 1"
           },
-          "difficulty": {
-            "type": "string",
-            "description": "Difficulty level of the session",
-            "example": "medium",
-            "enum": ["easy", "medium", "hard"]
-          },
           "createdAt": {
             "format": "date-time",
             "type": "string",
@@ -1283,6 +1442,7 @@
         },
         "required": [
           "id",
+          "hostId",
           "sessionName",
           "isActive",
           "games",
@@ -1311,6 +1471,12 @@
             "minLength": 2,
             "maxLength": 50
           },
+          "type": {
+            "type": "string",
+            "description": "Type of player (host or participant)",
+            "enum": ["host", "participant"],
+            "example": "participant"
+          },
           "session": {
             "description": "The session this player belongs to",
             "allOf": [
@@ -1328,6 +1494,13 @@
               }
             ]
           },
+          "gameParticipants": {
+            "description": "Game participations of this player",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameParticipant"
+            }
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string",
@@ -1341,7 +1514,16 @@
             "example": "2024-03-18T23:00:00Z"
           }
         },
-        "required": ["id", "name", "session", "team", "createdAt", "updatedAt"]
+        "required": [
+          "id",
+          "name",
+          "type",
+          "session",
+          "team",
+          "gameParticipants",
+          "createdAt",
+          "updatedAt"
+        ]
       },
       "GameParticipant": {
         "type": "object",
@@ -1354,7 +1536,7 @@
           "status": {
             "type": "string",
             "description": "Current status of the participant",
-            "enum": ["joined", "ready", "playing", "finished"],
+            "enum": ["joined", "ready"],
             "example": "joined"
           },
           "game": {
@@ -1506,12 +1688,7 @@
                 "Player 1": 0.6,
                 "Player 2": 0.4
               },
-              "commonStrategies": ["Aggressive", "Defensive"],
-              "difficultyLevels": {
-                "easy": 0.3,
-                "medium": 0.5,
-                "hard": 0.2
-              }
+              "commonStrategies": ["Aggressive", "Defensive"]
             }
           },
           "createdAt": {
@@ -1562,16 +1739,15 @@
             "description": "Total number of rounds for the game",
             "example": 5
           },
-          "config": {
-            "type": "string",
-            "description": "Additional game configuration in JSON format",
+          "setup": {
+            "type": "object",
+            "description": "Game setup configuration",
             "example": {
-              "timeLimit": 60,
-              "difficulty": "medium"
+              "timeLimit": 60
             }
           }
         },
-        "required": ["totalRounds"]
+        "required": ["totalRounds", "setup"]
       },
       "AddPlayerDto": {
         "type": "object",
@@ -1598,10 +1774,15 @@
           },
           "sessionName": {
             "type": "string",
-            "description": "Name of the game session",
+            "description": "Name of the session",
             "example": "Friday Night Games",
-            "minLength": 3,
-            "maxLength": 100
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "hostId": {
+            "type": "number",
+            "description": "ID of the host player creating the session",
+            "example": 1
           },
           "isActive": {
             "type": "boolean",
@@ -1610,11 +1791,16 @@
             "default": true
           }
         },
-        "required": ["sessionName"]
+        "required": ["sessionName", "hostId"]
       },
       "UpdateSessionDto": {
         "type": "object",
         "properties": {
+          "hostId": {
+            "type": "number",
+            "description": "ID of the host who owns this session",
+            "example": 1
+          },
           "sessionName": {
             "type": "string",
             "description": "New name for the game session",
@@ -1627,7 +1813,8 @@
             "description": "Whether the session is currently active",
             "example": false
           }
-        }
+        },
+        "required": ["hostId"]
       },
       "PlayerDto": {
         "type": "object",
@@ -1645,6 +1832,11 @@
       "AssignPlayersDto": {
         "type": "object",
         "properties": {
+          "hostId": {
+            "type": "number",
+            "description": "ID of the host who owns this session",
+            "example": 1
+          },
           "players": {
             "description": "Array of players to add to the session",
             "example": [
@@ -1665,11 +1857,16 @@
             }
           }
         },
-        "required": ["players"]
+        "required": ["hostId", "players"]
       },
       "AddGamesDto": {
         "type": "object",
         "properties": {
+          "hostId": {
+            "type": "number",
+            "description": "ID of the host who owns this session",
+            "example": 1
+          },
           "gameIds": {
             "description": "Array of game IDs to add to the session",
             "example": [1, 2, 3],
@@ -1680,7 +1877,7 @@
             }
           }
         },
-        "required": ["gameIds"]
+        "required": ["hostId", "gameIds"]
       },
       "CreatePlayerDto": {
         "type": "object",
@@ -1691,9 +1888,33 @@
             "example": "John Doe",
             "minLength": 2,
             "maxLength": 50
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of player (host or participant)",
+            "enum": ["host", "participant"],
+            "example": "participant"
           }
         },
         "required": ["name"]
+      },
+      "CreateHostPlayerDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the host player",
+            "example": "John Doe",
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Session ID to create the host for",
+            "example": 1
+          }
+        },
+        "required": ["name", "sessionId"]
       },
       "PlayerScoreDto": {
         "type": "object",

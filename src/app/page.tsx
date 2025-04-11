@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { CreateSessionModal } from "@/components/sessions/CreateSessionModal";
+import { CreateHostPlayerModal } from "@/components/sessions/CreateHostPlayerModal";
 import { useSessionStore } from "@/store/sessionStore";
 import { Badge } from "@/components/ui/Badge";
 
@@ -17,15 +18,40 @@ export default function Home() {
   const router = useRouter();
   const { games, isLoading, error, fetchGames } = useGameStore();
   const [hoveredGame, setHoveredGame] = useState<number | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const { sessions, fetchSessions, createSession } = useSessionStore();
+  const [isCreateSessionModalOpen, setIsCreateSessionModalOpen] =
+    useState(false);
+  const [isHostPlayerModalOpen, setIsHostPlayerModalOpen] = useState(false);
+  const { sessions, fetchSessions, createSession, hostId, setHostId } =
+    useSessionStore();
 
   useEffect(() => {
     fetchGames();
     fetchSessions();
   }, [fetchGames, fetchSessions]);
 
-  const activeSessions = sessions.filter((session) => session.isActive);
+  // Filter sessions to only show active sessions created by the current host
+  const hostActiveSessions = sessions.filter(
+    (session) => session.isActive && session.hostId === hostId
+  );
+
+  // Filter games to only show games created by the current host
+  const hostGames = games.filter(
+    (game) => game.createdBy === hostId?.toString()
+  );
+
+  const handleCreateButtonClick = () => {
+    if (!hostId) {
+      setIsHostPlayerModalOpen(true);
+    } else {
+      setIsCreateSessionModalOpen(true);
+    }
+  };
+
+  const handleHostCreated = (newHostId: number) => {
+    setHostId(newHostId);
+    setIsHostPlayerModalOpen(false);
+    setIsCreateSessionModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -37,8 +63,8 @@ export default function Home() {
               Games Night
             </Link>
             <div className="flex gap-4">
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                Create New Session
+              <Button onClick={handleCreateButtonClick}>
+                {!hostId ? "Create Host Player" : "Create New Session"}
               </Button>
             </div>
           </div>
@@ -157,95 +183,102 @@ export default function Home() {
               <p className="text-gray-700 mb-4">{error}</p>
               <Button onClick={() => fetchGames()}>Try Again</Button>
             </div>
-          ) : games.length === 0 ? (
+          ) : !hostId || hostGames.length === 0 ? (
             <div className="text-center py-12">
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 No active games
               </h3>
               <p className="text-gray-700 mb-4">
-                Be the first to create a game and invite your friends!
+                {!hostId
+                  ? "Create a host player to start managing games."
+                  : "You haven't created any games yet. Create a game to get started!"}
               </p>
               <Link href="/games">
-                <Button>Create a Game</Button>
+                <Button>
+                  {!hostId ? "Create Host Player" : "Create a Game"}
+                </Button>
               </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {games.slice(0, 3).map((game) => (
-                <motion.div
-                  key={game.id}
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  onHoverStart={() => setHoveredGame(game.id)}
-                  onHoverEnd={() => setHoveredGame(null)}
-                >
-                  <Card className="p-6 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    {hoveredGame === game.id && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="absolute inset-0 bg-blue-50/50"
-                      />
-                    )}
-                    <div className="relative z-10">
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-xl font-semibold text-gray-900">
-                          {game.name}
-                        </h3>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            game.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
+              {hostGames
+                .filter((game) => game.status === "active")
+                .slice(0, 3)
+                .map((game) => (
+                  <motion.div
+                    key={game.id}
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                    onHoverStart={() => setHoveredGame(game.id)}
+                    onHoverEnd={() => setHoveredGame(null)}
+                  >
+                    <Card className="p-6 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      {hoveredGame === game.id && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute inset-0 bg-blue-50/50"
+                        />
+                      )}
+                      <div className="relative z-10">
+                        <div className="flex justify-between items-start mb-4">
+                          <h3 className="text-xl font-semibold text-gray-900">
+                            {game.name}
+                          </h3>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              game.status === "pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : game.status === "active"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {game.status === "active"
+                              ? "In Progress"
+                              : game.status === "pending"
+                              ? "Waiting"
+                              : "Finished"}
+                          </span>
+                        </div>
+                        <div className="space-y-2 mb-6">
+                          <p className="text-gray-700 flex items-center">
+                            <span className="font-medium">Players:</span>
+                            <span className="ml-2">
+                              {(game.participants || []).length}/
+                              {game.maxPlayers || 0}
+                            </span>
+                          </p>
+                          <p className="text-gray-700 flex items-center">
+                            <span className="font-medium">Type:</span>
+                            <span className="ml-2 capitalize">
+                              {game.type || "Unknown"}
+                            </span>
+                          </p>
+                          <p className="text-gray-700 flex items-center">
+                            <span className="font-medium">Host:</span>
+                            <span className="ml-2">{game.createdBy}</span>
+                          </p>
+                        </div>
+                        <Link href={`/games/${game.id}`}>
+                          <Button
+                            variant={
+                              game.status === "pending" ? "default" : "outline"
+                            }
+                            className="w-full"
+                            disabled={game.status !== "pending"}
+                          >
+                            {game.status === "pending"
+                              ? "Join Game"
                               : game.status === "active"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {game.status === "active"
-                            ? "In Progress"
-                            : game.status === "pending"
-                            ? "Waiting"
-                            : "Finished"}
-                        </span>
+                              ? "Game in Progress"
+                              : "Game Ended"}
+                          </Button>
+                        </Link>
                       </div>
-                      <div className="space-y-2 mb-6">
-                        <p className="text-gray-700 flex items-center">
-                          <span className="font-medium">Players:</span>
-                          <span className="ml-2">
-                            {(game.participants || []).length}/
-                            {game.maxPlayers || 0}
-                          </span>
-                        </p>
-                        <p className="text-gray-700 flex items-center">
-                          <span className="font-medium">Type:</span>
-                          <span className="ml-2 capitalize">
-                            {game.type || "Unknown"}
-                          </span>
-                        </p>
-                        <p className="text-gray-700 flex items-center">
-                          <span className="font-medium">Host:</span>
-                          <span className="ml-2">{game.createdBy}</span>
-                        </p>
-                      </div>
-                      <Link href={`/games/${game.id}`}>
-                        <Button
-                          variant={
-                            game.status === "pending" ? "default" : "outline"
-                          }
-                          className="w-full"
-                          disabled={game.status !== "pending"}
-                        >
-                          {game.status === "pending"
-                            ? "Join Game"
-                            : game.status === "active"
-                            ? "Game in Progress"
-                            : "Game Ended"}
-                        </Button>
-                      </Link>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
+                    </Card>
+                  </motion.div>
+                ))}
             </div>
           )}
         </div>
@@ -272,8 +305,8 @@ export default function Home() {
               <Link href="/sessions">
                 <Button variant="outline">View All Sessions</Button>
               </Link>
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                New Session
+              <Button onClick={handleCreateButtonClick}>
+                {!hostId ? "Create Host Player" : "New Session"}
               </Button>
             </div>
           </div>
@@ -288,10 +321,10 @@ export default function Home() {
                 </Card>
               ))}
             </div>
-          ) : activeSessions.length > 0 ? (
+          ) : hostActiveSessions.length > 0 ? (
             <>
               <div className="grid gap-6 md:grid-cols-2">
-                {activeSessions.slice(0, 3).map((session) => (
+                {hostActiveSessions.slice(0, 3).map((session) => (
                   <Card
                     key={session.id}
                     className="p-6 hover:shadow-lg transition-shadow"
@@ -333,7 +366,7 @@ export default function Home() {
                   </Card>
                 ))}
               </div>
-              {activeSessions.length > 3 && (
+              {hostActiveSessions.length > 3 && (
                 <div className="flex justify-center mt-8">
                   <Link href="/sessions">
                     <Button variant="outline">View All Sessions</Button>
@@ -349,8 +382,8 @@ export default function Home() {
               <p className="text-gray-600 mb-6">
                 Start a new session to begin playing games with friends!
               </p>
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                Create Your First Session
+              <Button onClick={handleCreateButtonClick}>
+                {!hostId ? "Create Host Player" : "Create Your First Session"}
               </Button>
             </div>
           )}
@@ -380,13 +413,19 @@ export default function Home() {
       </footer>
 
       <CreateSessionModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        isOpen={isCreateSessionModalOpen}
+        onClose={() => setIsCreateSessionModalOpen(false)}
         onSubmit={async (data) => {
           const session = await createSession(data);
-          setIsCreateModalOpen(false);
+          setIsCreateSessionModalOpen(false);
           router.push(`/sessions/${session.id}`);
         }}
+      />
+
+      <CreateHostPlayerModal
+        isOpen={isHostPlayerModalOpen}
+        onClose={() => setIsHostPlayerModalOpen(false)}
+        onSuccess={handleHostCreated}
       />
     </div>
   );
