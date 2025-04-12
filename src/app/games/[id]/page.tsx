@@ -9,6 +9,7 @@ import { GameStatus } from "@/types/game";
 import { api } from "@/services/api";
 import { PlayerList } from "@/components/sessions/PlayerList";
 import { AnalyticsDashboard } from "@/components/analytics";
+import { RealtimeScoreUpdates } from "@/components/sessions/RealtimeScoreUpdates";
 import {
   Card,
   CardHeader,
@@ -843,6 +844,8 @@ export default function GamePage() {
         </Card>
 
         <AnalyticsDashboard gameId={gameId} />
+
+        <RealtimeScoreUpdates gameId={gameId} />
 
         <div className="flex flex-wrap gap-4 justify-end mt-8 mb-12">
           <div className="w-full">

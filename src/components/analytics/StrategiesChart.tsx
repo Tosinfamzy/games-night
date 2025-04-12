@@ -52,7 +52,7 @@ export function StrategiesChart({
   // For demo purposes, we're creating frequency data for strategies
   // In a real app, this would come from your backend
   const strategies = analytics.statistics.commonStrategies;
-  const frequencies = strategies.map((_, index) => {
+  const frequencies = strategies.map(() => {
     // Generate random frequency between 1-10 for demonstration
     // In production, this would be actual frequency data
     return Math.floor(Math.random() * 10) + 1;

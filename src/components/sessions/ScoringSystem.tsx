@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { BasePlayer, BaseTeam } from "@/types/session";
 import { Input } from "@/components/ui/Input";
+import { wsService } from "@/lib/websocket";
+import { useWebSocket } from "@/components/providers/WebSocketProvider";
+import { Button } from "../ui";
 
 interface ScoringSystemProps {
   teams: BaseTeam[];
@@ -27,20 +30,105 @@ export function ScoringSystem({
 }: ScoringSystemProps) {
   const [playerScores, setPlayerScores] = useState<Record<number, number>>({});
   const [teamScores, setTeamScores] = useState<Record<number, number>>({});
+  const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
+  const { connected } = useWebSocket();
 
-  const handlePlayerScoreChange = async (playerId: number, score: string) => {
+  const handlePlayerScoreChange = (playerId: number, score: string) => {
     const numericScore = parseFloat(score);
     if (!isNaN(numericScore)) {
       setPlayerScores((prev) => ({ ...prev, [playerId]: numericScore }));
-      await onUpdateScore(playerId, gameId, numericScore);
     }
   };
 
-  const handleTeamScoreChange = async (teamId: number, score: string) => {
+  const handleTeamScoreChange = (teamId: number, score: string) => {
     const numericScore = parseFloat(score);
     if (!isNaN(numericScore)) {
       setTeamScores((prev) => ({ ...prev, [teamId]: numericScore }));
-      await onUpdateTeamScore(teamId, gameId, numericScore);
+    }
+  };
+
+  const submitPlayerScore = async (playerId: number) => {
+    const score = playerScores[playerId];
+    if (!score) return;
+
+    // Set submitting state for this player
+    setSubmitting((prev) => ({ ...prev, [`player-${playerId}`]: true }));
+
+    try {
+      // First, update through the WebSocket for real-time updates
+      if (connected) {
+        wsService.updatePlayerScore(playerId, gameId, score);
+      }
+
+      // Then, use the API for persistence
+      await onUpdateScore(playerId, gameId, score);
+
+      // Clear the input after successful submission
+      setPlayerScores((prev) => ({ ...prev, [playerId]: 0 }));
+    } catch (error) {
+      console.error("Failed to update score:", error);
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [`player-${playerId}`]: false }));
+    }
+  };
+
+  const submitTeamScore = async (teamId: number) => {
+    const score = teamScores[teamId];
+    if (!score) return;
+
+    // Set submitting state for this team
+    setSubmitting((prev) => ({ ...prev, [`team-${teamId}`]: true }));
+
+    try {
+      // First, update through the WebSocket for real-time updates
+      if (connected) {
+        wsService.updateTeamScore(teamId, gameId, score);
+      }
+
+      // Then, use the API for persistence
+      await onUpdateTeamScore(teamId, gameId, score);
+
+      // Clear the input after successful submission
+      setTeamScores((prev) => ({ ...prev, [teamId]: 0 }));
+    } catch (error) {
+      console.error("Failed to update team score:", error);
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [`team-${teamId}`]: false }));
+    }
+  };
+
+  // Function to handle quick score updates (like +1, +5, etc.)
+  const quickScore = async (
+    entityId: number,
+    points: number,
+    isTeam: boolean
+  ) => {
+    const submittingKey = isTeam
+      ? `team-${entityId}-quick`
+      : `player-${entityId}-quick`;
+    setSubmitting((prev) => ({ ...prev, [submittingKey]: true }));
+
+    try {
+      if (connected) {
+        if (isTeam) {
+          wsService.updateTeamScore(entityId, gameId, points);
+        } else {
+          wsService.updatePlayerScore(entityId, gameId, points);
+        }
+      }
+
+      if (isTeam) {
+        await onUpdateTeamScore(entityId, gameId, points);
+      } else {
+        await onUpdateScore(entityId, gameId, points);
+      }
+    } catch (error) {
+      console.error(
+        `Failed to update ${isTeam ? "team" : "player"} score:`,
+        error
+      );
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [submittingKey]: false }));
     }
   };
 
@@ -53,10 +141,10 @@ export function ScoringSystem({
           {teams.map((team) => (
             <div
               key={team.id}
-              className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
+              className="border rounded-lg p-4 hover:bg-gray-50"
             >
               <h4 className="font-medium mb-2">{team.name}</h4>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 mb-3">
                 <Input
                   type="number"
                   value={teamScores[team.id] || ""}
@@ -66,7 +154,41 @@ export function ScoringSystem({
                   className="w-24"
                   placeholder="Score"
                 />
-                <span className="text-gray-600">points</span>
+                <Button
+                  onClick={() => submitTeamScore(team.id)}
+                  disabled={
+                    !teamScores[team.id] || submitting[`team-${team.id}`]
+                  }
+                  isLoading={submitting[`team-${team.id}`]}
+                >
+                  Update
+                </Button>
+              </div>
+              <div className="flex space-x-2 mt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => quickScore(team.id, 1, true)}
+                  disabled={submitting[`team-${team.id}-quick`]}
+                >
+                  +1
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => quickScore(team.id, 5, true)}
+                  disabled={submitting[`team-${team.id}-quick`]}
+                >
+                  +5
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => quickScore(team.id, 10, true)}
+                  disabled={submitting[`team-${team.id}-quick`]}
+                >
+                  +10
+                </Button>
               </div>
             </div>
           ))}
@@ -80,7 +202,7 @@ export function ScoringSystem({
           {players.map((player) => (
             <div key={player.id} className="border rounded-lg p-4">
               <h4 className="font-medium mb-2">{player.name}</h4>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 mb-3">
                 <Input
                   type="number"
                   value={playerScores[player.id] || ""}
@@ -90,7 +212,42 @@ export function ScoringSystem({
                   className="w-24"
                   placeholder="Score"
                 />
-                <span className="text-gray-600">points</span>
+                <Button
+                  onClick={() => submitPlayerScore(player.id)}
+                  disabled={
+                    !playerScores[player.id] ||
+                    submitting[`player-${player.id}`]
+                  }
+                  isLoading={submitting[`player-${player.id}`]}
+                >
+                  Update
+                </Button>
+              </div>
+              <div className="flex space-x-2 mt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => quickScore(player.id, 1, false)}
+                  disabled={submitting[`player-${player.id}-quick`]}
+                >
+                  +1
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => quickScore(player.id, 5, false)}
+                  disabled={submitting[`player-${player.id}-quick`]}
+                >
+                  +5
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => quickScore(player.id, 10, false)}
+                  disabled={submitting[`player-${player.id}-quick`]}
+                >
+                  +10
+                </Button>
               </div>
             </div>
           ))}
