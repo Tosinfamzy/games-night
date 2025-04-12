@@ -15,14 +15,15 @@ export function PlayerList({
   onPlayerAdded,
 }: PlayerListProps) {
   const [newPlayerName, setNewPlayerName] = useState("");
-  const { assignPlayers } = useSessionStore();
+  const { assignPlayers, hostId } = useSessionStore();
 
   const handleAddPlayer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPlayerName.trim()) return;
+    if (!newPlayerName.trim() || hostId === null) return;
 
     try {
       const response = await assignPlayers(sessionId, {
+        hostId,
         players: [{ name: newPlayerName }],
       });
       if (response.players?.length) {

@@ -29,8 +29,16 @@ interface SessionStore {
     teamId: string,
     data: UpdateTeamDto
   ) => Promise<BaseTeam>;
-  updatePlayerScore: (playerId: string, points: number) => Promise<void>;
-  updateTeamScore: (teamId: string, points: number) => Promise<void>;
+  updatePlayerScore: (
+    playerId: number,
+    gameId: number,
+    points: number
+  ) => Promise<void>;
+  updateTeamScore: (
+    teamId: number,
+    gameId: number,
+    points: number
+  ) => Promise<void>;
   endSession: (id: string) => Promise<void>;
   createRandomTeams: (
     sessionId: string,
@@ -41,6 +49,7 @@ interface SessionStore {
     data: { teams: { name: string; playerIds: number[] }[] }
   ) => Promise<BaseSession>;
   setHostId: (id: number) => void;
+  clearHostId: () => void;
   createHostPlayer: (name: string) => Promise<number>;
 }
 
@@ -56,6 +65,10 @@ const createSessionStore = () => {
 
         setHostId: (id: number) => {
           set({ hostId: id });
+        },
+
+        clearHostId: () => {
+          set({ hostId: null, sessions: [], currentSession: null });
         },
 
         createHostPlayer: async (name: string) => {
@@ -280,10 +293,18 @@ const createSessionStore = () => {
           }
         },
 
-        updatePlayerScore: async (playerId: string, points: number) => {
+        updatePlayerScore: async (
+          playerId: number,
+          gameId: number,
+          points: number
+        ) => {
           set({ isLoading: true, error: null });
           try {
-            await api.put(`/players/${playerId}/score`, { points });
+            await api.post(`/scoring/player`, {
+              playerId,
+              gameId,
+              points,
+            });
             set({ isLoading: false });
           } catch (error) {
             const errorMessage =
@@ -298,15 +319,25 @@ const createSessionStore = () => {
           }
         },
 
-        updateTeamScore: async (teamId: string, points: number) => {
+        updateTeamScore: async (
+          teamId: number,
+          gameId: number,
+          points: number
+        ) => {
           set({ isLoading: true, error: null });
           try {
-            await api.put(`/teams/${teamId}/score`, { points });
+            await api.post(`/scoring/team`, {
+              teamId,
+              gameId,
+              points,
+            });
+
+            // Still update local state to reflect the change immediately
             set((state) => ({
               sessions: state.sessions.map((session) => ({
                 ...session,
                 teams: session.teams.map((team) =>
-                  team.id === Number(teamId)
+                  team.id === teamId
                     ? { ...team, score: (team.score || 0) + points }
                     : team
                 ),
@@ -315,7 +346,7 @@ const createSessionStore = () => {
                 ? {
                     ...state.currentSession,
                     teams: state.currentSession.teams.map((team) =>
-                      team.id === Number(teamId)
+                      team.id === teamId
                         ? { ...team, score: (team.score || 0) + points }
                         : team
                     ),

@@ -5,13 +5,23 @@ import { Input } from "@/components/ui/Input";
 interface ScoringSystemProps {
   teams: BaseTeam[];
   players: BasePlayer[];
-  onUpdateScore: (playerId: number, score: number) => Promise<void>;
-  onUpdateTeamScore: (teamId: number, score: number) => Promise<void>;
+  gameId: number;
+  onUpdateScore: (
+    playerId: number,
+    gameId: number,
+    score: number
+  ) => Promise<void>;
+  onUpdateTeamScore: (
+    teamId: number,
+    gameId: number,
+    score: number
+  ) => Promise<void>;
 }
 
 export function ScoringSystem({
   teams,
   players,
+  gameId,
   onUpdateScore,
   onUpdateTeamScore,
 }: ScoringSystemProps) {
@@ -22,7 +32,7 @@ export function ScoringSystem({
     const numericScore = parseFloat(score);
     if (!isNaN(numericScore)) {
       setPlayerScores((prev) => ({ ...prev, [playerId]: numericScore }));
-      await onUpdateScore(playerId, numericScore);
+      await onUpdateScore(playerId, gameId, numericScore);
     }
   };
 
@@ -30,7 +40,7 @@ export function ScoringSystem({
     const numericScore = parseFloat(score);
     if (!isNaN(numericScore)) {
       setTeamScores((prev) => ({ ...prev, [teamId]: numericScore }));
-      await onUpdateTeamScore(teamId, numericScore);
+      await onUpdateTeamScore(teamId, gameId, numericScore);
     }
   };
 
