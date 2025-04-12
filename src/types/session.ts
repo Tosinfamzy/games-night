@@ -65,10 +65,13 @@ export type SessionStatus = "active" | "completed" | "cancelled";
 
 export interface CreateSessionDto {
   sessionName: string;
+  hostId: number; // Required in API schema
+  gameIds?: number[]; // Optional array of game IDs from API schema
   isActive?: boolean;
 }
 
 export interface UpdateSessionDto {
+  hostId: number; // Required in API schema
   sessionName?: string;
   isActive?: boolean;
 }
@@ -130,13 +133,28 @@ export interface SessionState {
 export interface SessionFormData {
   sessionName: string;
   isActive?: boolean;
+  hostId?: number; // Added hostId to match CreateSessionDto
 }
 
 export interface AssignPlayersDto {
+  hostId: number; // Required in API schema
   players: { name: string }[];
 }
 
 export interface UpdateTeamDto {
   name?: string;
   players?: string[];
+}
+
+export interface CreateRandomTeamsDto {
+  hostId: number;
+  numberOfTeams?: number;
+}
+
+export interface CreateCustomTeamsDto {
+  hostId: number;
+  teams: {
+    name: string;
+    playerIds: number[];
+  }[];
 }

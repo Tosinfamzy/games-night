@@ -87,9 +87,9 @@ export default function Home() {
               Organize and join exciting game sessions with friends. From poker
               to chess, create the perfect game night experience.
             </p>
-            <Link href="/games">
-              <Button size="lg">Browse Games</Button>
-            </Link>
+            <Button size="lg" onClick={handleCreateButtonClick}>
+              {!hostId ? "Create Host Player" : "Create a Session"}
+            </Button>
           </div>
         </div>
       </motion.div>
@@ -415,10 +415,19 @@ export default function Home() {
       <CreateSessionModal
         isOpen={isCreateSessionModalOpen}
         onClose={() => setIsCreateSessionModalOpen(false)}
+        hostId={hostId}
         onSubmit={async (data) => {
-          const session = await createSession(data);
-          setIsCreateSessionModalOpen(false);
-          router.push(`/sessions/${session.id}`);
+          // Only proceed if hostId exists
+          if (hostId) {
+            // Ensure hostId is a number (not null or undefined)
+            const sessionData = {
+              ...data,
+              hostId: hostId,
+            };
+            const session = await createSession(sessionData);
+            setIsCreateSessionModalOpen(false);
+            router.push(`/sessions/${session.id}`);
+          }
         }}
       />
 

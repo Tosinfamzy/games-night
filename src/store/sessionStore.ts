@@ -19,6 +19,7 @@ interface SessionStore {
   fetchSessions: () => Promise<void>;
   fetchSession: (id: string) => Promise<BaseSession>;
   createSession: (data: CreateSessionDto) => Promise<BaseSession>;
+  createTeam: (sessionId: string, teamName: string) => Promise<BaseTeam>;
   assignPlayers: (
     sessionId: string,
     data: AssignPlayersDto
@@ -31,6 +32,14 @@ interface SessionStore {
   updatePlayerScore: (playerId: string, points: number) => Promise<void>;
   updateTeamScore: (teamId: string, points: number) => Promise<void>;
   endSession: (id: string) => Promise<void>;
+  createRandomTeams: (
+    sessionId: string,
+    data: { numberOfTeams?: number }
+  ) => Promise<BaseSession>;
+  createCustomTeams: (
+    sessionId: string,
+    data: { teams: { name: string; playerIds: number[] }[] }
+  ) => Promise<BaseSession>;
   setHostId: (id: number) => void;
   createHostPlayer: (name: string) => Promise<number>;
 }
@@ -157,6 +166,41 @@ const createSessionStore = () => {
               error instanceof Error
                 ? error.message
                 : "Failed to create session";
+            set({
+              error: errorMessage,
+              isLoading: false,
+            });
+            throw new Error(errorMessage);
+          }
+        },
+
+        createTeam: async (sessionId: string, teamName: string) => {
+          const hostId = get().hostId;
+          if (!hostId) {
+            throw new Error(
+              "No host player found. Create a host player first."
+            );
+          }
+
+          set({ isLoading: true, error: null });
+          try {
+            const response = await api.post(
+              `/sessions/${sessionId}/teams`,
+              { name: teamName },
+              { params: { hostId } }
+            );
+            const session = toBaseSession(response.data);
+            const team = session.teams.find(
+              (t: BaseTeam) => t.name === teamName
+            );
+            if (!team) {
+              throw new Error("Team not found in response");
+            }
+            set({ currentSession: session, isLoading: false });
+            return team;
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : "Failed to create team";
             set({
               error: errorMessage,
               isLoading: false,
@@ -316,6 +360,74 @@ const createSessionStore = () => {
           } catch (error) {
             const errorMessage =
               error instanceof Error ? error.message : "Failed to end session";
+            set({
+              error: errorMessage,
+              isLoading: false,
+            });
+            throw new Error(errorMessage);
+          }
+        },
+
+        createRandomTeams: async (
+          sessionId: string,
+          data: { numberOfTeams?: number }
+        ) => {
+          const hostId = get().hostId;
+          if (!hostId) {
+            throw new Error(
+              "No host player found. Create a host player first."
+            );
+          }
+
+          set({ isLoading: true, error: null });
+          try {
+            const response = await api.post(
+              `/sessions/${sessionId}/teams/random`,
+              { ...data },
+              { params: { hostId } }
+            );
+            const session = toBaseSession(response.data);
+            set({ currentSession: session, isLoading: false });
+            return session;
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "Failed to create random teams";
+            set({
+              error: errorMessage,
+              isLoading: false,
+            });
+            throw new Error(errorMessage);
+          }
+        },
+
+        createCustomTeams: async (
+          sessionId: string,
+          data: { teams: { name: string; playerIds: number[] }[] }
+        ) => {
+          const hostId = get().hostId;
+          if (!hostId) {
+            throw new Error(
+              "No host player found. Create a host player first."
+            );
+          }
+
+          set({ isLoading: true, error: null });
+          try {
+            const response = await api.post(
+              `/sessions/${sessionId}/teams/custom`,
+              { ...data },
+              { params: { hostId } }
+            );
+            const session = toBaseSession(response.data);
+            set({ currentSession: session, isLoading: false });
+            return session;
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "Failed to create custom teams";
             set({
               error: errorMessage,
               isLoading: false,

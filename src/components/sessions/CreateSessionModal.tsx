@@ -8,12 +8,14 @@ interface CreateSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (sessionData: SessionFormData) => void;
+  hostId?: number | null; // Update to accept null as well
 }
 
 export function CreateSessionModal({
   isOpen,
   onClose,
   onSubmit,
+  hostId,
 }: CreateSessionModalProps) {
   const [formData, setFormData] = useState<SessionFormData>({
     sessionName: "",
@@ -22,7 +24,11 @@ export function CreateSessionModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    // Include the hostId in the submission data if it exists
+    onSubmit({
+      ...formData,
+      hostId: hostId ?? undefined, // Convert null to undefined
+    });
     onClose();
   };
 

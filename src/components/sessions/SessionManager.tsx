@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { TeamManager } from "./TeamManager";
 import { BasePlayer, BaseTeam, BaseSession } from "@/types/session";
 import { PlayerList } from "./PlayerList";
+import { useSessionStore } from "@/store/sessionStore";
 
 interface SessionManagerProps {
   sessionId: string;
@@ -11,6 +12,7 @@ interface SessionManagerProps {
 export function SessionManager({ sessionId, session }: SessionManagerProps) {
   const [teams, setTeams] = useState<BaseTeam[]>(session.teams || []);
   const [players, setPlayers] = useState<BasePlayer[]>(session.players || []);
+  const { createTeam } = useSessionStore();
 
   const handlePlayerAdded = (newPlayer: BasePlayer) => {
     setPlayers((prevPlayers) => [...prevPlayers, newPlayer]);
@@ -20,6 +22,19 @@ export function SessionManager({ sessionId, session }: SessionManagerProps) {
     setTeams((prevTeams) =>
       prevTeams.map((team) => (team.id === updatedTeam.id ? updatedTeam : team))
     );
+  };
+
+  const handleTeamCreated = async (teamName: string): Promise<BaseTeam> => {
+    // Validate that there are at least 4 players before creating a team
+    if (players.length < 4) {
+      throw new Error(
+        "You need at least 4 players in the session to create teams."
+      );
+    }
+
+    const newTeam = await createTeam(sessionId, teamName);
+    setTeams((prevTeams) => [...prevTeams, newTeam]);
+    return newTeam;
   };
 
   if (!session) {
@@ -46,6 +61,8 @@ export function SessionManager({ sessionId, session }: SessionManagerProps) {
             teams={teams}
             players={players}
             onTeamUpdated={handleTeamUpdated}
+            onTeamCreated={handleTeamCreated}
+            sessionId={sessionId}
           />
         </div>
       </div>
