@@ -2,13 +2,16 @@ import React, { useState } from "react";
 import { BasePlayer, BaseTeam } from "@/types/session";
 import Button from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { api } from "@/services/api";
 
 interface TeamManagerProps {
   teams: BaseTeam[];
   players: BasePlayer[];
   onTeamUpdated: (team: BaseTeam) => void;
   onTeamCreated?: (teamName: string) => Promise<BaseTeam>;
+  onTeamsRandomized?: () => Promise<BaseTeam[]>;
   sessionId: string;
+  hostId?: number;
 }
 
 export function TeamManager({
@@ -16,25 +19,68 @@ export function TeamManager({
   players,
   onTeamUpdated,
   onTeamCreated,
+  onTeamsRandomized,
+  sessionId,
+  hostId,
 }: TeamManagerProps) {
   const [newTeamName, setNewTeamName] = useState("");
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [isRandomizingTeams, setIsRandomizingTeams] = useState(false);
   const [teamError, setTeamError] = useState<string | null>(null);
+  const [isAddingPlayer, setIsAddingPlayer] = useState<number | null>(null);
+  const [isRemovingPlayer, setIsRemovingPlayer] = useState<string | null>(null);
 
-  const handleAddPlayerToTeam = (team: BaseTeam, player: BasePlayer) => {
-    const updatedTeam = {
-      ...team,
-      players: [...team.players, player],
-    };
-    onTeamUpdated(updatedTeam);
+  const handleAddPlayerToTeam = async (team: BaseTeam, player: BasePlayer) => {
+    setIsAddingPlayer(player.id);
+    try {
+      // Use the API endpoint directly if no callback is provided
+      if (!onTeamUpdated) {
+        await api.put(`/sessions/teams/${team.id}/players`, {
+          playerId: player.id,
+        });
+      }
+
+      const updatedTeam = {
+        ...team,
+        players: [...team.players, player],
+      };
+      onTeamUpdated(updatedTeam);
+    } catch (error) {
+      console.error("Failed to add player to team:", error);
+      setTeamError(
+        error instanceof Error ? error.message : "Failed to add player to team"
+      );
+    } finally {
+      setIsAddingPlayer(null);
+    }
   };
 
-  const handleRemovePlayerFromTeam = (team: BaseTeam, playerId: number) => {
-    const updatedTeam = {
-      ...team,
-      players: team.players.filter((p) => p.id !== playerId),
-    };
-    onTeamUpdated(updatedTeam);
+  const handleRemovePlayerFromTeam = async (
+    team: BaseTeam,
+    playerId: number
+  ) => {
+    setIsRemovingPlayer(`${team.id}-${playerId}`);
+    try {
+      // Use the API endpoint directly if no callback is provided
+      if (!onTeamUpdated) {
+        await api.delete(`/sessions/teams/${team.id}/players/${playerId}`);
+      }
+
+      const updatedTeam = {
+        ...team,
+        players: team.players.filter((p) => p.id !== playerId),
+      };
+      onTeamUpdated(updatedTeam);
+    } catch (error) {
+      console.error("Failed to remove player from team:", error);
+      setTeamError(
+        error instanceof Error
+          ? error.message
+          : "Failed to remove player from team"
+      );
+    } finally {
+      setIsRemovingPlayer(null);
+    }
   };
 
   const handleCreateTeam = async () => {
@@ -43,7 +89,7 @@ export function TeamManager({
       return;
     }
 
-    if (!onTeamCreated) {
+    if (!onTeamCreated && !sessionId) {
       setTeamError("Team creation is not available");
       return;
     }
@@ -52,14 +98,53 @@ export function TeamManager({
     setIsCreatingTeam(true);
 
     try {
-      await onTeamCreated(newTeamName);
+      if (onTeamCreated) {
+        await onTeamCreated(newTeamName);
+      } else {
+        // Use the API endpoint directly if no callback is provided
+        await api.post(`/sessions/${sessionId}/teams`, {
+          name: newTeamName,
+          hostId,
+        });
+      }
       setNewTeamName("");
-      setIsCreatingTeam(false);
     } catch (error) {
       setTeamError(
         error instanceof Error ? error.message : "Failed to create team"
       );
+    } finally {
       setIsCreatingTeam(false);
+    }
+  };
+
+  const handleRandomizeTeams = async () => {
+    if (!sessionId) {
+      setTeamError("Session ID is required to randomize teams");
+      return;
+    }
+
+    setTeamError(null);
+    setIsRandomizingTeams(true);
+
+    try {
+      if (onTeamsRandomized) {
+        await onTeamsRandomized();
+      } else {
+        // Use the API endpoint directly if no callback is provided
+        await api.post(
+          `/sessions/${sessionId}/teams/random`,
+          {},
+          {
+            params: { hostId },
+          }
+        );
+      }
+    } catch (error) {
+      setTeamError(
+        error instanceof Error ? error.message : "Failed to randomize teams"
+      );
+    } finally {
+      setIsRandomizingTeams(false);
     }
   };
 
@@ -69,9 +154,24 @@ export function TeamManager({
   );
 
   const canCreateTeam = players.length >= 4 && availablePlayers.length >= 2;
+  const canRandomizeTeams = teams.length === 0 && players.length >= 4;
 
   return (
     <div className="space-y-4">
+      {/* Team actions */}
+      <div className="flex flex-wrap gap-4 mb-4">
+        {canRandomizeTeams && (
+          <Button
+            onClick={handleRandomizeTeams}
+            disabled={isRandomizingTeams}
+            variant="outline"
+          >
+            {isRandomizingTeams ? "Creating..." : "Create Random Teams"}
+          </Button>
+        )}
+      </div>
+
+      {/* Teams display */}
       {teams.map((team) => (
         <div key={team.id} className="p-4 bg-white shadow rounded-lg space-y-2">
           <h3 className="font-semibold text-gray-900">{team.name}</h3>
@@ -86,8 +186,11 @@ export function TeamManager({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleRemovePlayerFromTeam(team, player.id)}
+                  disabled={isRemovingPlayer === `${team.id}-${player.id}`}
                 >
-                  Remove
+                  {isRemovingPlayer === `${team.id}-${player.id}`
+                    ? "Removing..."
+                    : "Remove"}
                 </Button>
               </div>
             ))}
@@ -106,6 +209,7 @@ export function TeamManager({
                   }
                 }}
                 value=""
+                disabled={isAddingPlayer !== null}
               >
                 <option value="">Add player...</option>
                 {availablePlayers.map((player) => (
