@@ -416,17 +416,23 @@ export default function Home() {
         isOpen={isCreateSessionModalOpen}
         onClose={() => setIsCreateSessionModalOpen(false)}
         hostId={hostId}
-        onSubmit={async (data) => {
-          // Only proceed if hostId exists
-          if (hostId) {
-            // Ensure hostId is a number (not null or undefined)
-            const sessionData = {
-              ...data,
-              hostId: hostId,
+        onSubmit={async (sessionData) => {
+          try {
+            // Ensure hostId is provided to match CreateSessionDto requirements
+            const sessionWithHost = {
+              ...sessionData,
+              hostId: sessionData.hostId ?? hostId ?? 0,
             };
-            const session = await createSession(sessionData);
+
+            if (!sessionWithHost.hostId) {
+              throw new Error("Host ID is required to create a session");
+            }
+
+            const session = await createSession(sessionWithHost);
             setIsCreateSessionModalOpen(false);
             router.push(`/sessions/${session.id}`);
+          } catch (error) {
+            console.error("Failed to create session:", error);
           }
         }}
       />

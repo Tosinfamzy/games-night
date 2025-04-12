@@ -14,7 +14,11 @@ import { CreateHostPlayerModal } from "@/components/sessions/CreateHostPlayerMod
 export default function SessionPage() {
   const router = useRouter();
   const params = useParams();
-  const sessionId = params.id as string;
+  const sessionId = params?.id as string | undefined;
+
+  if (!sessionId) {
+    throw new Error("Session ID is missing.");
+  }
   const [isCreateGameModalOpen, setIsCreateGameModalOpen] = useState(false);
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
   const {

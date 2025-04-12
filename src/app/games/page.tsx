@@ -39,6 +39,7 @@ export default function GamesPage() {
     createSession,
     fetchSessions,
     isLoading: sessionsLoading,
+    hostId,
   } = useSessionStore();
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export default function GamesPage() {
     const matchesStatus = statusFilter === "all" || game.state === statusFilter;
     const matchesSession =
       sessionFilter === "all" ||
-      game.sessions.some(session => session.id === Number(sessionFilter));
+      game.sessions.some((session) => session.id === Number(sessionFilter));
     return matchesSearch && matchesStatus && matchesSession;
   });
 
@@ -120,10 +121,17 @@ export default function GamesPage() {
 
   const handleCreateSession = async (sessionData: SessionFormData) => {
     try {
-      const newSession = await createSession({
-        sessionName: sessionData.sessionName,
-        isActive: sessionData.isActive,
-      });
+      // Ensure hostId is provided by using the current hostId from store if not included in form data
+      const sessionWithHost = {
+        ...sessionData,
+        hostId: sessionData.hostId ?? hostId ?? 0,
+      };
+
+      if (!sessionWithHost.hostId) {
+        throw new Error("Host ID is required to create a session");
+      }
+
+      const newSession = await createSession(sessionWithHost);
       setSelectedSessionId(String(newSession.id));
       setIsCreateSessionModalOpen(false);
       setIsCreateModalOpen(true);

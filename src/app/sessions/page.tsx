@@ -23,7 +23,17 @@ export default function SessionsPage() {
 
   const handleCreateSession = async (data: SessionFormData) => {
     try {
-      const newSession = await createSession(data);
+      // Ensure hostId is provided by using the current hostId from store if not included in form data
+      const sessionData = {
+        ...data,
+        hostId: data.hostId ?? hostId ?? 0, // Use form data hostId, fall back to store hostId, or 0 as last resort
+      };
+
+      if (!sessionData.hostId) {
+        throw new Error("Host ID is required to create a session");
+      }
+
+      const newSession = await createSession(sessionData);
       setIsCreateModalOpen(false);
       router.push(`/sessions/${newSession.id}`);
     } catch (error) {
