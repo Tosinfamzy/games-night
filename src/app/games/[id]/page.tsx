@@ -417,6 +417,15 @@ export default function GamePage() {
         )
     ) || [];
 
+  // Add a null check before accessing currentGame properties
+  if (!currentGame) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">Game not found</div>
+      </div>
+    );
+  }
+
   const isHost = currentGame.createdBy === "current_user";
   const isPlayer =
     currentGame.sessions?.some((session) =>
