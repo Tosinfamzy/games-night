@@ -75,7 +75,10 @@ interface SessionScores {
 export default function GamePage() {
   const params = useParams();
   const router = useRouter();
-  const gameId = params.id as string;
+  const gameId = params?.id as string | undefined;
+  if (!gameId) {
+    throw new Error("Game ID is missing");
+  }
   const [newScore, setNewScore] = useState<Record<string, number>>({});
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
