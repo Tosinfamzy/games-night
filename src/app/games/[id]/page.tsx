@@ -108,6 +108,8 @@ export default function GamePage() {
     startGame,
     setupGame,
     completeGame,
+    pauseGame,
+    resumeGame,
     isLoading,
     error,
   } = useGameStore();
@@ -345,6 +347,28 @@ export default function GamePage() {
     }
   };
 
+  const handlePauseGame = async () => {
+    if (gameId) {
+      try {
+        await pauseGame(gameId);
+        await fetchGames();
+      } catch (error) {
+        console.error("Failed to pause game:", error);
+      }
+    }
+  };
+
+  const handleResumeGame = async () => {
+    if (gameId) {
+      try {
+        await resumeGame(gameId);
+        await fetchGames();
+      } catch (error) {
+        console.error("Failed to resume game:", error);
+      }
+    }
+  };
+
   const handleAddPlayer = async () => {
     if (!selectedPlayerId || !gameId) return;
 
@@ -392,6 +416,35 @@ export default function GamePage() {
           session.players.some((gamePlayer) => gamePlayer.id === player.id)
         )
     ) || [];
+
+  const isHost = currentGame.createdBy === "current_user";
+  const isPlayer =
+    currentGame.sessions?.some((session) =>
+      session.players.some((player) => player.id.toString() === "current_user")
+    ) ?? false;
+  const canJoin =
+    currentGame.status === "pending" &&
+    !isPlayer &&
+    (currentGame.sessions?.length
+      ? currentGame.sessions.find((s) => s.isActive)?.players?.length ?? 0
+      : 0) < (currentGame.maxPlayers || 0);
+  const canSetup =
+    isHost && currentGame.status === "pending" && currentGame.state === "setup";
+  const canStart =
+    isHost &&
+    currentGame.status === "pending" &&
+    currentGame.state === "ready" &&
+    (currentGame.sessions?.length
+      ? currentGame.sessions.find((s) => s.isActive)?.players?.length ?? 0
+      : 0) >= (currentGame.minPlayers || 0);
+  const canEnd = isHost && currentGame.status === "active";
+  const canComplete = isHost && currentGame.status === "active";
+  const canPause =
+    isHost &&
+    currentGame.status === "active" &&
+    currentGame.state === "in_progress";
+  const canResume =
+    isHost && currentGame.status === "active" && currentGame.state === "paused";
 
   if (isPageLoading) {
     return (
@@ -442,29 +495,6 @@ export default function GamePage() {
       </div>
     );
   }
-
-  const isHost = currentGame.createdBy === "current_user";
-  const isPlayer =
-    currentGame.sessions?.some((session) =>
-      session.players.some((player) => player.id.toString() === "current_user")
-    ) ?? false;
-  const canJoin =
-    currentGame.status === "pending" &&
-    !isPlayer &&
-    (currentGame.sessions?.length
-      ? currentGame.sessions.find((s) => s.isActive)?.players?.length ?? 0
-      : 0) < (currentGame.maxPlayers || 0);
-  const canSetup =
-    isHost && currentGame.status === "pending" && currentGame.state === "setup";
-  const canStart =
-    isHost &&
-    currentGame.status === "pending" &&
-    currentGame.state === "ready" &&
-    (currentGame.sessions?.length
-      ? currentGame.sessions.find((s) => s.isActive)?.players?.length ?? 0
-      : 0) >= (currentGame.minPlayers || 0);
-  const canEnd = isHost && currentGame.status === "active";
-  const canComplete = isHost && currentGame.status === "active";
 
   return (
     <div className="container mx-auto px-4 py-8 text-gray-900 bg-white min-h-screen">
@@ -805,23 +835,88 @@ export default function GamePage() {
 
         <AnalyticsDashboard gameId={gameId} />
 
-        <div className="flex gap-4 justify-end">
+        <div className="flex flex-wrap gap-4 justify-end mt-8 mb-12">
+          <div className="w-full">
+            <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">Game State: </h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge
+                    variant={
+                      currentGame.state === "setup"
+                        ? "warning"
+                        : currentGame.state === "ready"
+                        ? "info"
+                        : currentGame.state === "in_progress"
+                        ? "success"
+                        : currentGame.state === "paused"
+                        ? "warning"
+                        : currentGame.state === "completed"
+                        ? "default"
+                        : "default"
+                    }
+                  >
+                    {currentGame.state}
+                  </Badge>
+                  <span className="text-sm text-gray-500">
+                    {currentGame.state === "setup"
+                      ? "Configure game settings"
+                      : currentGame.state === "ready"
+                      ? "Players are ready"
+                      : currentGame.state === "in_progress"
+                      ? "Game is ongoing"
+                      : currentGame.state === "paused"
+                      ? "Game is paused"
+                      : currentGame.state === "completed"
+                      ? "Game is completed"
+                      : ""}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">
+                  {currentGame.currentRound && currentGame.totalRounds
+                    ? `Round: ${currentGame.currentRound}/${currentGame.totalRounds}`
+                    : ""}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {canJoin && <Button onClick={handleJoinGame}>Join Game</Button>}
+
           {isPlayer && currentGame.status === "pending" && (
             <Button variant="outline" onClick={handleLeaveGame}>
               Leave Game
             </Button>
           )}
+
           {canSetup && <Button onClick={handleSetupGame}>Setup Game</Button>}
+
           {isPlayer && currentGame.state === "setup" && (
             <Button onClick={handlePlayerReady}>Mark as Ready</Button>
           )}
+
           {canStart && <Button onClick={handleStartGame}>Start Game</Button>}
+
+          {canPause && (
+            <Button variant="warning" onClick={handlePauseGame}>
+              Pause Game
+            </Button>
+          )}
+
+          {canResume && (
+            <Button variant="success" onClick={handleResumeGame}>
+              Resume Game
+            </Button>
+          )}
+
           {canEnd && (
             <Button variant="outline" onClick={handleEndGame}>
               End Game
             </Button>
           )}
+
           {canComplete && (
             <Button variant="outline" onClick={handleCompleteGame}>
               Complete Game

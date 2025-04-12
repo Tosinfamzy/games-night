@@ -1,6 +1,11 @@
 export type GameType = "monopoly" | "uno" | "chess" | "checkers" | "custom";
 export type GameStatus = "pending" | "active" | "completed" | "cancelled";
-export type GamePhase = "setup" | "ready" | "in_progress" | "paused" | "completed";
+export type GamePhase =
+  | "setup"
+  | "ready"
+  | "in_progress"
+  | "paused"
+  | "completed";
 
 export interface Player {
   id: number;
@@ -19,7 +24,7 @@ export interface Player {
 
 export interface GameParticipant {
   id: number;
-  status: 'joined' | 'ready' | 'playing' | 'finished';
+  status: "joined" | "ready" | "playing" | "finished";
   player: {
     id: number;
     name: string;
@@ -72,7 +77,7 @@ export interface Game {
     startTime?: string;
     endTime?: string;
     winner?: string;
-    difficulty?: 'easy' | 'medium' | 'hard';
+    difficulty?: "easy" | "medium" | "hard";
     createdAt: string;
     updatedAt: string;
     playerCount: number;
@@ -124,6 +129,8 @@ export interface GameStoreState {
   startGame: (id: string) => Promise<Game>;
   completeGame: (id: string) => Promise<Game>;
   updateGameState: (id: string) => Promise<Game>;
+  pauseGame: (id: string) => Promise<Game>;
+  resumeGame: (id: string) => Promise<Game>;
   removePlayer: (id: string, playerId: string) => Promise<void>;
 
   cleanup: () => void;

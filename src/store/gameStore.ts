@@ -293,6 +293,50 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     }
   },
 
+  pauseGame: async (id: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.put(`/games/${id}/state`, {
+        state: "paused",
+      });
+      const updatedGame = response.data;
+      set((state) => ({
+        games: state.games.map((g) => (g.id === Number(id) ? updatedGame : g)),
+        currentGame:
+          state.currentGame?.id === Number(id)
+            ? updatedGame
+            : state.currentGame,
+        isLoading: false,
+      }));
+      return updatedGame;
+    } catch (err) {
+      set({ error: "Failed to pause game", isLoading: false });
+      throw err;
+    }
+  },
+
+  resumeGame: async (id: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.put(`/games/${id}/state`, {
+        state: "in_progress",
+      });
+      const updatedGame = response.data;
+      set((state) => ({
+        games: state.games.map((g) => (g.id === Number(id) ? updatedGame : g)),
+        currentGame:
+          state.currentGame?.id === Number(id)
+            ? updatedGame
+            : state.currentGame,
+        isLoading: false,
+      }));
+      return updatedGame;
+    } catch (err) {
+      set({ error: "Failed to resume game", isLoading: false });
+      throw err;
+    }
+  },
+
   removePlayer: async (id: string, playerId: string) => {
     set({ isLoading: true, error: null });
     try {
