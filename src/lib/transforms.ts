@@ -16,5 +16,6 @@ export function toBaseSession(session: Session): BaseSession {
     winner: session.winner,
     difficulty: session.difficulty,
     playerCount: session.playerCount,
+    hostId: session.hostId,
   };
 }
