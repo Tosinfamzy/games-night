@@ -10,6 +10,7 @@ import { api } from "@/services/api";
 import { SessionManager } from "@/components/sessions/SessionManager";
 import { GameFormData } from "@/types/game";
 import { CreateHostPlayerModal } from "@/components/sessions/CreateHostPlayerModal";
+import { SessionNavigation } from "@/components/sessions/SessionNavigation";
 
 export default function SessionPage() {
   const router = useRouter();
@@ -211,47 +212,50 @@ export default function SessionPage() {
             Games in this Session
           </h2>
           {currentSession.games && currentSession.games.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2">
-              {currentSession.games.map((game) => (
-                <div key={game.id} className="bg-white border rounded-lg p-6">
-                  <h3 className="text-xl font-semibold mb-2 text-gray-900">
-                    {game.name}
-                  </h3>
-                  <div className="text-sm text-gray-600 space-y-2">
-                    <p>State: {game.state}</p>
-                    {game.rules && (
-                      <div>
-                        <p className="font-medium text-gray-900">Rules:</p>
-                        <p className="mt-1 text-gray-600">{game.rules}</p>
-                      </div>
-                    )}
+            <>
+              <SessionNavigation sessionId={sessionId} className="mb-6" />
+              <div className="grid gap-6 md:grid-cols-2">
+                {currentSession.games.map((game) => (
+                  <div key={game.id} className="bg-white border rounded-lg p-6">
+                    <h3 className="text-xl font-semibold mb-2 text-gray-900">
+                      {game.name}
+                    </h3>
+                    <div className="text-sm text-gray-600 space-y-2">
+                      <p>State: {game.state}</p>
+                      {game.rules && (
+                        <div>
+                          <p className="font-medium text-gray-900">Rules:</p>
+                          <p className="mt-1 text-gray-600">{game.rules}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4 flex justify-end gap-2">
+                      <Link href={`/games/${game.id}`}>
+                        <Button variant="outline">View Game</Button>
+                      </Link>
+                      {currentSession.isActive && (
+                        <>
+                          <Button
+                            variant="outline"
+                            onClick={() => handleStartGame(game.id)}
+                            disabled={game.state !== "ready"}
+                          >
+                            Start Game
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => handleEndGame(game.id)}
+                            disabled={game.state !== "in_progress"}
+                          >
+                            End Game
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div className="mt-4 flex justify-end gap-2">
-                    <Link href={`/games/${game.id}`}>
-                      <Button variant="outline">View Game</Button>
-                    </Link>
-                    {currentSession.isActive && (
-                      <>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleStartGame(game.id)}
-                          disabled={game.state !== "ready"}
-                        >
-                          Start Game
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => handleEndGame(game.id)}
-                          disabled={game.state !== "in_progress"}
-                        >
-                          End Game
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="text-center py-8 text-gray-600">
               No games added to this session yet.

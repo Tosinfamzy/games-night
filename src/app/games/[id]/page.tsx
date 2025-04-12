@@ -10,6 +10,7 @@ import { api } from "@/services/api";
 import { PlayerList } from "@/components/sessions/PlayerList";
 import { AnalyticsDashboard } from "@/components/analytics";
 import { RealtimeScoreUpdates } from "@/components/sessions/RealtimeScoreUpdates";
+import { SessionNavigation } from "@/components/sessions/SessionNavigation";
 import {
   Card,
   CardHeader,
@@ -849,6 +850,15 @@ export default function GamePage() {
         <AnalyticsDashboard gameId={gameId} />
 
         <RealtimeScoreUpdates gameId={gameId} />
+
+        {/* Add Session Navigation if game belongs to an active session */}
+        {currentSession && (
+          <SessionNavigation
+            sessionId={currentSession.id.toString()}
+            currentGameId={gameId}
+            className="mb-8"
+          />
+        )}
 
         <div className="flex flex-wrap gap-4 justify-end mt-8 mb-12">
           <div className="w-full">
