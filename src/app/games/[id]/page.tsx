@@ -8,6 +8,7 @@ import { useSessionStore } from "@/store/sessionStore";
 import { GameStatus } from "@/types/game";
 import { api } from "@/services/api";
 import { PlayerList } from "@/components/sessions/PlayerList";
+import { AnalyticsDashboard } from "@/components/analytics";
 import {
   Card,
   CardHeader,
@@ -77,8 +78,12 @@ export default function GamePage() {
   const [newScore, setNewScore] = useState<Record<string, number>>({});
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [gameLeaderboard, setGameLeaderboard] = useState<GameLeaderboard[] | null>(null);
-  const [sessionScores, setSessionScores] = useState<SessionScores[] | null>(null);
+  const [gameLeaderboard, setGameLeaderboard] = useState<
+    GameLeaderboard[] | null
+  >(null);
+  const [sessionScores, setSessionScores] = useState<SessionScores[] | null>(
+    null
+  );
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | "">("");
   const [isAddingPlayer, setIsAddingPlayer] = useState(false);
   const [addPlayerError, setAddPlayerError] = useState<string | null>(null);
@@ -797,6 +802,8 @@ export default function GamePage() {
             </div>
           </div>
         </Card>
+
+        <AnalyticsDashboard gameId={gameId} />
 
         <div className="flex gap-4 justify-end">
           {canJoin && <Button onClick={handleJoinGame}>Join Game</Button>}
