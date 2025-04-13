@@ -78,6 +78,7 @@ export interface CreateSessionDto {
 
 export interface CreatePlayerDto {
   name: string;
+  type?: string;
 }
 
 export interface AssignPlayersDto {
