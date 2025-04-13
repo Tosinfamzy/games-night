@@ -6,6 +6,7 @@ import { JoinSessionModal } from "@/components/sessions/JoinSessionModal";
 import { Button } from "@/components/ui";
 import Link from "next/link";
 import { Session } from "@/types/session";
+import { api } from "@/services/api";
 
 export default function JoinPage() {
   const router = useRouter();
@@ -13,20 +14,51 @@ export default function JoinPage() {
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [joinSuccess, setJoinSuccess] = useState(false);
   const [sessionData, setSessionData] = useState<Session | null>(null);
-  // We track the player ID to store in localStorage (used for session tracking)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [playerId, setPlayerId] = useState<number | null>(null);
+  const [, setPlayerId] = useState<number | null>(null);
   const [initialCode, setInitialCode] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Check if there's a join code in URL
   useEffect(() => {
     if (!searchParams) return;
+
     const code = searchParams.get("code");
+    const sessionId = searchParams.get("session");
+
     if (code) {
       setInitialCode(code);
       setIsJoinModalOpen(true);
+
+      // If we have both code and session ID, we can look up the session info
+      if (sessionId) {
+        lookupSession(code, sessionId);
+      }
     }
   }, [searchParams]);
+
+  // Look up session info when we have both code and session ID
+  const lookupSession = async (code: string, sessionId: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // First try to verify the session with the join code
+      const lookupResponse = await api.post("/sessions/lookup", {
+        joinCode: code,
+      });
+
+      // If successful and IDs match, pre-populate the session data
+      if (lookupResponse.data && lookupResponse.data.id === sessionId) {
+        setSessionData(lookupResponse.data);
+      }
+    } catch (err) {
+      console.error("Error looking up session:", err);
+      setError("Unable to verify session. Please enter your details manually.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleJoinSuccess = (session: Session, newPlayerId: number) => {
     setSessionData(session);
@@ -73,12 +105,33 @@ export default function JoinPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
                 Join a Game Session
               </h1>
-              <p className="text-gray-600 mb-8">
-                Enter a join code to join an existing game session.
-              </p>
-              <Button size="lg" onClick={() => setIsJoinModalOpen(true)}>
-                Enter Join Code
-              </Button>
+              {isLoading ? (
+                <p className="text-gray-600 mb-8">
+                  Verifying session information...
+                </p>
+              ) : error ? (
+                <p className="text-red-600 mb-8">{error}</p>
+              ) : initialCode ? (
+                <p className="text-gray-600 mb-8">
+                  Session code detected! Enter your name to join.
+                </p>
+              ) : (
+                <p className="text-gray-600 mb-8">
+                  Enter a join code to join an existing game session.
+                </p>
+              )}
+
+              {!isLoading && (
+                <Button size="lg" onClick={() => setIsJoinModalOpen(true)}>
+                  {initialCode ? "Enter Your Name" : "Enter Join Code"}
+                </Button>
+              )}
+
+              {isLoading && (
+                <div className="flex justify-center">
+                  <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -89,6 +142,7 @@ export default function JoinPage() {
         onClose={() => setIsJoinModalOpen(false)}
         onSuccess={handleJoinSuccess}
         initialCode={initialCode}
+        initialSessionData={sessionData}
       />
     </div>
   );

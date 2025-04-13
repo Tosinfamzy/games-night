@@ -12,6 +12,7 @@ import { GameFormData } from "@/types/game";
 import { CreateHostPlayerModal } from "@/components/sessions/CreateHostPlayerModal";
 import { SessionNavigation } from "@/components/sessions/SessionNavigation";
 import { JoinCodeDisplay } from "@/components/sessions/JoinCodeDisplay";
+import { SessionQRCode } from "@/components/sessions/SessionQRCode";
 
 export default function SessionPage() {
   const router = useRouter();
@@ -276,7 +277,13 @@ export default function SessionPage() {
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">
             Join Code
           </h2>
-          <JoinCodeDisplay joinCode={currentSession.joinCode} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <JoinCodeDisplay joinCode={currentSession.joinCode} />
+            <SessionQRCode
+              joinCode={currentSession.joinCode}
+              sessionId={sessionId}
+            />
+          </div>
         </section>
       </div>
 

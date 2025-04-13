@@ -18,6 +18,7 @@ interface JoinSessionModalProps {
   onClose: () => void;
   onSuccess: (session: Session, playerId: number) => void;
   initialCode?: string | null;
+  initialSessionData?: Session | null;
 }
 
 export function JoinSessionModal({
@@ -25,6 +26,7 @@ export function JoinSessionModal({
   onClose,
   onSuccess,
   initialCode = null,
+  initialSessionData = null,
 }: JoinSessionModalProps) {
   const [step, setStep] = useState<"code" | "name">("code");
   const [joinCode, setJoinCode] = useState("");
@@ -33,14 +35,32 @@ export function JoinSessionModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Use initialCode if provided
+  // Use initialCode and initialSessionData if provided
   useEffect(() => {
-    if (initialCode && isOpen) {
-      setJoinCode(initialCode);
-      // Auto-check the code when modal opens with initialCode
-      handleCodeCheck(initialCode);
+    if (isOpen) {
+      // Reset form when modal opens
+      setError(null);
+
+      if (initialCode) {
+        setJoinCode(initialCode);
+
+        // If we have initial session data from the QR code
+        if (initialSessionData) {
+          setSessionInfo({
+            id: initialSessionData.id,
+            sessionName: initialSessionData.sessionName,
+            playerCount: initialSessionData.playerCount || 0,
+            isActive: initialSessionData.isActive,
+            joinCode: initialSessionData.joinCode,
+          });
+          setStep("name"); // Skip to name step
+        } else {
+          // No session data, but we have a code - verify it
+          handleCodeCheck(initialCode);
+        }
+      }
     }
-  }, [initialCode, isOpen]);
+  }, [initialCode, initialSessionData, isOpen]);
 
   const handleCodeCheck = async (code: string) => {
     if (!code.trim()) return;
@@ -193,6 +213,7 @@ export function JoinSessionModal({
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Enter your name"
                 required
+                autoFocus
               />
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
