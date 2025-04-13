@@ -450,7 +450,7 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Session ID",
+            "description": "Session ID (UUID)",
             "schema": {
               "type": "string"
             }
@@ -493,7 +493,7 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Session ID",
+            "description": "Session ID (UUID)",
             "schema": {
               "type": "string"
             }
@@ -537,7 +537,7 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Session ID",
+            "description": "Session ID (UUID)",
             "schema": {
               "type": "string"
             }
@@ -575,7 +575,7 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Session ID",
+            "description": "Session ID (UUID)",
             "schema": {
               "type": "string"
             }
@@ -621,7 +621,7 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Session ID",
+            "description": "Session ID (UUID)",
             "schema": {
               "type": "string"
             }
@@ -664,7 +664,7 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Session ID",
+            "description": "Session ID (UUID)",
             "schema": {
               "type": "string"
             }
@@ -712,7 +712,7 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Session ID",
+            "description": "Session ID (UUID)",
             "schema": {
               "type": "string"
             }
@@ -760,7 +760,7 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Session ID",
+            "description": "Session ID (UUID)",
             "schema": {
               "type": "string"
             }
@@ -798,7 +798,7 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Session ID",
+            "description": "Session ID (UUID)",
             "schema": {
               "type": "string"
             }
@@ -836,7 +836,7 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Session ID",
+            "description": "Session ID (UUID)",
             "schema": {
               "type": "string"
             }
@@ -929,7 +929,7 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "description": "Session ID",
+            "description": "Session ID (UUID)",
             "schema": {
               "type": "string"
             }
@@ -967,6 +967,75 @@
         "tags": ["sessions"]
       }
     },
+    "/sessions/join": {
+      "post": {
+        "operationId": "SessionsController_joinSession",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully joined the session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot join a completed session or player is already in this session"
+          },
+          "404": {
+            "description": "Session not found or player not found"
+          }
+        },
+        "summary": "Join an existing session using a join code",
+        "tags": ["sessions"]
+      }
+    },
+    "/sessions/lookup": {
+      "post": {
+        "operationId": "SessionsController_lookupSession",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LookupSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No active session found with this join code"
+          }
+        },
+        "summary": "Look up a session by join code without joining",
+        "tags": ["sessions"]
+      }
+    },
     "/players": {
       "post": {
         "operationId": "PlayersController_addPlayer",
@@ -982,7 +1051,7 @@
                 "example1": {
                   "value": {
                     "name": "John Doe",
-                    "sessionId": 1,
+                    "sessionId": "123e4567-e89b-12d3-a456-426614174000",
                     "type": "participant"
                   },
                   "description": "Example of adding a new participant"
@@ -990,7 +1059,7 @@
                 "example2": {
                   "value": {
                     "name": "Jane Host",
-                    "sessionId": 1,
+                    "sessionId": "123e4567-e89b-12d3-a456-426614174000",
                     "type": "host"
                   },
                   "description": "Example of adding a host"
@@ -1194,9 +1263,9 @@
             "name": "sessionId",
             "required": true,
             "in": "path",
-            "description": "The session ID",
+            "description": "The session ID (UUID)",
             "schema": {
-              "type": "number"
+              "type": "string"
             }
           },
           {
@@ -1226,9 +1295,9 @@
             "name": "sessionId",
             "required": true,
             "in": "path",
-            "description": "The session ID",
+            "description": "The session ID (UUID)",
             "schema": {
-              "type": "number"
+              "type": "string"
             }
           }
         ],
@@ -1249,9 +1318,9 @@
             "name": "sessionId",
             "required": true,
             "in": "path",
-            "description": "The session ID",
+            "description": "The session ID (UUID)",
             "schema": {
-              "type": "number"
+              "type": "string"
             }
           }
         ],
@@ -1373,9 +1442,9 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "number",
+            "type": "string",
             "description": "Unique identifier of the session",
-            "example": 1
+            "example": "123e4567-e89b-12d3-a456-426614174000"
           },
           "hostId": {
             "type": "number",
@@ -1391,6 +1460,11 @@
             "type": "boolean",
             "description": "Whether the session is currently active",
             "example": true
+          },
+          "joinCode": {
+            "type": "string",
+            "description": "Unique join code for players to join this session",
+            "example": "ABC123"
           },
           "games": {
             "description": "Games included in this session",
@@ -1445,6 +1519,7 @@
           "hostId",
           "sessionName",
           "isActive",
+          "joinCode",
           "games",
           "players",
           "createdAt",
@@ -1834,7 +1909,7 @@
         "properties": {
           "hostId": {
             "type": "number",
-            "description": "ID of the host who owns this session",
+            "description": "ID of the host player",
             "example": 1
           },
           "players": {
@@ -1879,6 +1954,33 @@
         },
         "required": ["hostId", "gameIds"]
       },
+      "JoinSessionDto": {
+        "type": "object",
+        "properties": {
+          "joinCode": {
+            "type": "string",
+            "description": "The join code for the session",
+            "example": "ABC123"
+          },
+          "playerId": {
+            "type": "number",
+            "description": "ID of the player joining the session",
+            "example": 1
+          }
+        },
+        "required": ["joinCode", "playerId"]
+      },
+      "LookupSessionDto": {
+        "type": "object",
+        "properties": {
+          "joinCode": {
+            "type": "string",
+            "description": "The join code for the session",
+            "example": "ABC123"
+          }
+        },
+        "required": ["joinCode"]
+      },
       "CreatePlayerDto": {
         "type": "object",
         "properties": {
@@ -1889,6 +1991,11 @@
             "minLength": 2,
             "maxLength": 50
           },
+          "sessionId": {
+            "type": "string",
+            "description": "Session ID to join",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
           "type": {
             "type": "string",
             "description": "Type of player (host or participant)",
@@ -1896,7 +2003,7 @@
             "example": "participant"
           }
         },
-        "required": ["name"]
+        "required": ["name", "sessionId"]
       },
       "CreateHostPlayerDto": {
         "type": "object",
@@ -1907,14 +2014,9 @@
             "example": "John Doe",
             "minLength": 2,
             "maxLength": 50
-          },
-          "sessionId": {
-            "type": "string",
-            "description": "Session ID to create the host for",
-            "example": 1
           }
         },
-        "required": ["name", "sessionId"]
+        "required": ["name"]
       },
       "PlayerScoreDto": {
         "type": "object",

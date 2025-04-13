@@ -63,6 +63,9 @@ export default function Home() {
               Games Night
             </Link>
             <div className="flex gap-4">
+              <Link href="/join">
+                <Button variant="outline">Join Session</Button>
+              </Link>
               <Button onClick={handleCreateButtonClick}>
                 {!hostId ? "Create Host Player" : "Create New Session"}
               </Button>
@@ -87,9 +90,16 @@ export default function Home() {
               Organize and join exciting game sessions with friends. From poker
               to chess, create the perfect game night experience.
             </p>
-            <Button size="lg" onClick={handleCreateButtonClick}>
-              {!hostId ? "Create Host Player" : "Create a Session"}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" onClick={handleCreateButtonClick}>
+                {!hostId ? "Create Host Player" : "Create a Session"}
+              </Button>
+              <Link href="/join">
+                <Button size="lg" variant="outline">
+                  Join a Session
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -441,6 +451,7 @@ export default function Home() {
         isOpen={isHostPlayerModalOpen}
         onClose={() => setIsHostPlayerModalOpen(false)}
         onSuccess={handleHostCreated}
+        sessionId={undefined} // No specific session when creating from home page
       />
     </div>
   );

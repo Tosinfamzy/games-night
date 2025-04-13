@@ -17,5 +17,6 @@ export function toBaseSession(session: Session): BaseSession {
     difficulty: session.difficulty,
     playerCount: session.playerCount,
     hostId: session.hostId,
+    joinCode: session.joinCode,
   };
 }

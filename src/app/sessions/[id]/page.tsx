@@ -11,6 +11,7 @@ import { SessionManager } from "@/components/sessions/SessionManager";
 import { GameFormData } from "@/types/game";
 import { CreateHostPlayerModal } from "@/components/sessions/CreateHostPlayerModal";
 import { SessionNavigation } from "@/components/sessions/SessionNavigation";
+import { JoinCodeDisplay } from "@/components/sessions/JoinCodeDisplay";
 
 export default function SessionPage() {
   const router = useRouter();
@@ -142,6 +143,7 @@ export default function SessionPage() {
               isOpen={isHostModalOpen}
               onClose={() => router.push("/sessions")}
               onSuccess={handleHostCreated}
+              sessionId={sessionId}
             />
           </div>
         </div>
@@ -269,6 +271,13 @@ export default function SessionPage() {
             </div>
           )}
         </section>
+
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+            Join Code
+          </h2>
+          <JoinCodeDisplay joinCode={currentSession.joinCode} />
+        </section>
       </div>
 
       <CreateGameModal
@@ -282,6 +291,7 @@ export default function SessionPage() {
         isOpen={isHostModalOpen}
         onClose={() => router.push("/sessions")}
         onSuccess={handleHostCreated}
+        sessionId={sessionId}
       />
     </main>
   );

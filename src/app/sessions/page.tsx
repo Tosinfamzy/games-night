@@ -135,6 +135,7 @@ export default function SessionsPage() {
           isOpen={isHostModalOpen}
           onClose={() => setIsHostModalOpen(false)}
           onSuccess={handleHostCreated}
+          sessionId={undefined} // No specific session when creating from sessions list
         />
       </div>
     </div>

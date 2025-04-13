@@ -59,6 +59,7 @@ export interface BaseSession {
   difficulty?: "easy" | "medium" | "hard";
   playerCount?: number;
   hostId: number;
+  joinCode: string; // Add this property for session joining functionality
 }
 
 export type SessionStatus = "active" | "completed" | "cancelled";

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui";
 import { Input } from "@/components/ui";
 import { Button } from "@/components/ui";
@@ -21,6 +21,18 @@ export function CreateSessionModal({
     sessionName: "",
     isActive: true,
   });
+  // Track if this is a freshly created host
+  const [isNewHost, setIsNewHost] = useState(false);
+
+  // When the modal opens and hostId changes, assume it's a new host
+  useEffect(() => {
+    if (isOpen && hostId) {
+      setIsNewHost(true);
+      // Reset the flag after a few seconds
+      const timer = setTimeout(() => setIsNewHost(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, hostId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +52,15 @@ export function CreateSessionModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Session">
       <form onSubmit={handleSubmit} className="space-y-6">
+        {isNewHost && hostId && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4 animate-pulse">
+            <p>
+              Host player created successfully! Now create your first game
+              session.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-4">
           <Input
             label="Session Name"
