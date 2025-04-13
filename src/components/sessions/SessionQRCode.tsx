@@ -14,9 +14,10 @@ export function SessionQRCode({
   className = "",
 }: SessionQRCodeProps) {
   // The QR code encodes a URL that directs to the join page with pre-filled join code
+  // Added source=qr parameter to indicate this is a QR code scan
   const joinUrl = `${
     typeof window !== "undefined" ? window.location.origin : ""
-  }/join?code=${joinCode}${sessionId ? `&session=${sessionId}` : ""}`;
+  }/join?code=${joinCode}${sessionId ? `&session=${sessionId}` : ""}&source=qr`;
 
   return (
     <Card className={`overflow-hidden ${className}`}>

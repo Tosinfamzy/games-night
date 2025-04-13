@@ -19,6 +19,7 @@ interface JoinSessionModalProps {
   onSuccess: (session: Session, playerId: number) => void;
   initialCode?: string | null;
   initialSessionData?: Session | null;
+  fromQrCode?: boolean; // New prop to indicate if opened from QR code scan
 }
 
 export function JoinSessionModal({
@@ -27,8 +28,9 @@ export function JoinSessionModal({
   onSuccess,
   initialCode = null,
   initialSessionData = null,
+  fromQrCode = false, // Default to false for backward compatibility
 }: JoinSessionModalProps) {
-  const [step, setStep] = useState<"code" | "name">("code");
+  const [step, setStep] = useState<"code" | "name">(fromQrCode ? "name" : "code");
   const [joinCode, setJoinCode] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
@@ -54,13 +56,13 @@ export function JoinSessionModal({
             joinCode: initialSessionData.joinCode,
           });
           setStep("name"); // Skip to name step
-        } else {
-          // No session data, but we have a code - verify it
+        } else if (fromQrCode) {
+          // If coming from QR but no session data, do the lookup immediately
           handleCodeCheck(initialCode);
         }
       }
     }
-  }, [initialCode, initialSessionData, isOpen]);
+  }, [initialCode, initialSessionData, isOpen, fromQrCode]);
 
   const handleCodeCheck = async (code: string) => {
     if (!code.trim()) return;
@@ -94,7 +96,7 @@ export function JoinSessionModal({
 
   const handlePlayerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!playerName.trim() || !joinCode.trim()) return;
+    if (!playerName.trim() || !joinCode.trim() || !sessionInfo) return;
 
     setIsLoading(true);
     setError(null);
@@ -104,6 +106,7 @@ export function JoinSessionModal({
       const playerResponse = await api.post("/players", {
         name: playerName.trim(),
         type: "participant",
+        sessionId: sessionInfo.id.toString(), // Add the sessionId parameter
       });
 
       const playerId = playerResponse.data.id;
@@ -121,7 +124,7 @@ export function JoinSessionModal({
       setJoinCode("");
       setPlayerName("");
       setSessionInfo(null);
-      setStep("code");
+      setStep(fromQrCode ? "name" : "code"); // Stay on name step if from QR
     } catch (err) {
       setError(
         err instanceof Error
@@ -134,9 +137,14 @@ export function JoinSessionModal({
   };
 
   const handleBackClick = () => {
-    setStep("code");
-    setSessionInfo(null);
-    setError(null);
+    // If from QR code, closing is better than going back to code step
+    if (fromQrCode) {
+      handleClose();
+    } else {
+      setStep("code");
+      setSessionInfo(null);
+      setError(null);
+    }
   };
 
   const handleClose = () => {
@@ -144,12 +152,15 @@ export function JoinSessionModal({
     setPlayerName("");
     setSessionInfo(null);
     setError(null);
-    setStep("code");
+    setStep(fromQrCode ? "name" : "code");
     onClose();
   };
 
+  // Modified title to make it clear when coming from QR code
+  const modalTitle = fromQrCode ? "Enter Your Name to Join" : "Join Session";
+
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Join Session">
+    <Modal isOpen={isOpen} onClose={handleClose} title={modalTitle}>
       {step === "code" ? (
         <form onSubmit={handleCodeSubmit} className="space-y-6">
           <div className="space-y-4">
@@ -220,10 +231,21 @@ export function JoinSessionModal({
           </div>
 
           <div className="flex justify-between gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={handleBackClick}>
-              Back
-            </Button>
-            <Button type="submit" disabled={isLoading || !playerName.trim()}>
+            {!fromQrCode && (
+              <Button type="button" variant="outline" onClick={handleBackClick}>
+                Back
+              </Button>
+            )}
+            {fromQrCode && (
+              <Button type="button" variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+            )}
+            <Button 
+              type="submit" 
+              disabled={isLoading || !playerName.trim()}
+              className={fromQrCode ? "ml-auto" : ""}
+            >
               {isLoading ? "Joining..." : "Join Session"}
             </Button>
           </div>

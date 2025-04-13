@@ -19,6 +19,7 @@ function JoinPageContent() {
   const [initialCode, setInitialCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFromQrCode, setIsFromQrCode] = useState(false);
 
   // Check if there's a join code in URL
   useEffect(() => {
@@ -26,10 +27,12 @@ function JoinPageContent() {
 
     const code = searchParams.get("code");
     const sessionId = searchParams.get("session");
+    const qrSource = searchParams.get("source") === "qr";
 
     if (code) {
       setInitialCode(code);
       setIsJoinModalOpen(true);
+      setIsFromQrCode(qrSource); // Track if this came from a QR code scan
 
       // If we have both code and session ID, we can look up the session info
       if (sessionId) {
@@ -134,6 +137,7 @@ function JoinPageContent() {
         onSuccess={handleJoinSuccess}
         initialCode={initialCode}
         initialSessionData={sessionData}
+        fromQrCode={isFromQrCode}
       />
     </>
   );
