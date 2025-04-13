@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { JoinSessionModal } from "@/components/sessions/JoinSessionModal";
 import { Button } from "@/components/ui";
@@ -8,7 +8,8 @@ import Link from "next/link";
 import { Session } from "@/types/session";
 import { api } from "@/services/api";
 
-export default function JoinPage() {
+// This component handles the parts that need useSearchParams
+function JoinPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
@@ -76,17 +77,7 @@ export default function JoinPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <nav className="bg-white border-b shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="text-xl font-bold text-gray-900">
-              Games Night
-            </Link>
-          </div>
-        </div>
-      </nav>
-
+    <>
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-md mx-auto">
           {joinSuccess ? (
@@ -144,6 +135,41 @@ export default function JoinPage() {
         initialCode={initialCode}
         initialSessionData={sessionData}
       />
+    </>
+  );
+}
+
+// Loading fallback for the Suspense boundary
+function JoinPageLoading() {
+  return (
+    <div className="container mx-auto px-4 py-16">
+      <div className="max-w-md mx-auto">
+        <div className="bg-white border rounded-lg shadow-sm p-6 text-center">
+          <div className="h-8 bg-gray-200 rounded w-3/4 mx-auto mb-4 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto mb-8 animate-pulse"></div>
+          <div className="h-10 bg-gray-200 rounded w-32 mx-auto animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function JoinPage() {
+  return (
+    <div className="min-h-screen bg-white">
+      <nav className="bg-white border-b shadow-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="text-xl font-bold text-gray-900">
+              Games Night
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <Suspense fallback={<JoinPageLoading />}>
+        <JoinPageContent />
+      </Suspense>
     </div>
   );
 }
