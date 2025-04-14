@@ -30,7 +30,9 @@ export function JoinSessionModal({
   initialSessionData = null,
   fromQrCode = false, // Default to false for backward compatibility
 }: JoinSessionModalProps) {
-  const [step, setStep] = useState<"code" | "name">(fromQrCode ? "name" : "code");
+  const [step, setStep] = useState<"code" | "name">(
+    fromQrCode ? "name" : "code"
+  );
   const [joinCode, setJoinCode] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
@@ -241,8 +243,8 @@ export function JoinSessionModal({
                 Cancel
               </Button>
             )}
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading || !playerName.trim()}
               className={fromQrCode ? "ml-auto" : ""}
             >

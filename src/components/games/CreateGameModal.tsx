@@ -29,7 +29,7 @@ export function CreateGameModal({
 
   const handleSubmit = async () => {
     if (isCreatingNew) {
-      if (!newGameData.name || !newGameData.sessionId) return;
+      if (!newGameData.name) return;
       await onCreateGame(newGameData as GameFormData);
     } else {
       await onSubmit(selectedGames);
