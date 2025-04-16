@@ -25,7 +25,6 @@ export function SessionManager({ sessionId, session }: SessionManagerProps) {
   };
 
   const handleTeamCreated = async (teamName: string): Promise<BaseTeam> => {
-    // Validate that there are at least 4 players before creating a team
     if (players.length < 4) {
       throw new Error(
         "You need at least 4 players in the session to create teams."

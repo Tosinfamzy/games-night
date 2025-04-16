@@ -19,41 +19,33 @@ export function SessionNavigation({
   const router = useRouter();
   const { currentSession, hostId } = useSessionStore();
 
-  // Early return if no session is loaded
   if (!currentSession) return null;
 
   const games = currentSession.games || [];
-  if (games.length <= 1) return null; // No need for navigation with 0 or 1 game
+  if (games.length <= 1) return null;
 
-  // Find current game index
   const currentIndex = currentGameId
     ? games.findIndex((game) => game.id.toString() === currentGameId)
     : -1;
 
-  // Get previous and next game IDs
   const previousGameId = currentIndex > 0 ? games[currentIndex - 1].id : null;
   const nextGameId =
     currentIndex < games.length - 1 ? games[currentIndex + 1].id : null;
 
-  // Navigate to another game
   const navigateToGame = (gameId: number) => {
     router.push(`/games/${gameId}`);
   };
 
-  // Handle advancing to the next game via the API
   const handleMoveToNextGame = async () => {
     try {
-      // Using the API endpoint directly since moveToNextGame isn't available
       if (hostId) {
         await fetch(`/api/sessions/${sessionId}/next-game?hostId=${hostId}`, {
           method: "POST",
         });
 
-        // Refresh the session to get updated game order
         if (nextGameId) {
           router.push(`/games/${nextGameId}`);
         } else {
-          // If there's no next game but the call succeeded, we might need to refresh
           router.refresh();
         }
       } else {

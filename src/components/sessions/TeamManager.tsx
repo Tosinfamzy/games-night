@@ -61,7 +61,6 @@ export function TeamManager({
   ) => {
     setIsRemovingPlayer(`${team.id}-${playerId}`);
     try {
-      // Use the API endpoint directly if no callback is provided
       if (!onTeamUpdated) {
         await api.delete(`/sessions/teams/${team.id}/players/${playerId}`);
       }
@@ -101,7 +100,6 @@ export function TeamManager({
       if (onTeamCreated) {
         await onTeamCreated(newTeamName);
       } else {
-        // Use the API endpoint directly if no callback is provided
         await api.post(`/sessions/${sessionId}/teams`, {
           name: newTeamName,
           hostId,
@@ -130,7 +128,6 @@ export function TeamManager({
       if (onTeamsRandomized) {
         await onTeamsRandomized();
       } else {
-        // Use the API endpoint directly if no callback is provided
         await api.post(
           `/sessions/${sessionId}/teams/random`,
           {},
