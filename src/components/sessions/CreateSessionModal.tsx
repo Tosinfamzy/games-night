@@ -8,7 +8,7 @@ interface CreateSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (sessionData: SessionFormData) => void;
-  hostId?: number | null; // Update to accept null as well
+  hostId?: number | null;
 }
 
 export function CreateSessionModal({
@@ -21,14 +21,11 @@ export function CreateSessionModal({
     sessionName: "",
     isActive: true,
   });
-  // Track if this is a freshly created host
   const [isNewHost, setIsNewHost] = useState(false);
 
-  // When the modal opens and hostId changes, assume it's a new host
   useEffect(() => {
     if (isOpen && hostId) {
       setIsNewHost(true);
-      // Reset the flag after a few seconds
       const timer = setTimeout(() => setIsNewHost(false), 5000);
       return () => clearTimeout(timer);
     }
@@ -36,10 +33,9 @@ export function CreateSessionModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Include the hostId in the submission data if it exists
     onSubmit({
       ...formData,
-      hostId: hostId ?? undefined, // Convert null to undefined
+      hostId: hostId ?? undefined,
     });
     onClose();
   };

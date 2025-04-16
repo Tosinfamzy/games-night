@@ -96,7 +96,6 @@ const createSessionStore = () => {
         fetchSessions: async () => {
           const hostId = get().hostId;
           if (!hostId) {
-            // If no host ID, don't show error, just return empty sessions
             set({ sessions: [], isLoading: false });
             return;
           }

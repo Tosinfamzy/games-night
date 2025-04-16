@@ -6,7 +6,6 @@ import {
   AddPlayerDto,
   Game,
 } from "@/types/game";
-// Update the import path to correct location
 import { api } from "@/services/api";
 import { wsService } from "@/lib/websocket";
 
@@ -23,7 +22,6 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
       const games = response.data;
       set({ games, isLoading: false });
 
-      // Update currentGame if we have a game selected
       const currentGame = get().currentGame;
       if (currentGame) {
         const updatedGame = games.find((g: Game) => g.id === currentGame.id);
@@ -41,7 +39,6 @@ export const useGameStore = create<GameStoreState>((set, get) => ({
     const game = get().games.find((g: Game) => g.id.toString() === gameId);
     set({ currentGame: game || null });
 
-    // Subscribe to real-time updates for this game if found
     if (game) {
       wsService.subscribeToGame(gameId, {
         onScoreUpdate: (data) => {

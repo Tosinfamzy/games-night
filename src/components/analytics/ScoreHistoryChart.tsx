@@ -42,7 +42,9 @@ export function ScoreHistoryChart({
   analytics,
   className = "",
 }: ScoreHistoryChartProps) {
-  const scoreHistory = analytics?.statistics?.scoreHistory || [];
+  const scoreHistory = useMemo(() => {
+    return analytics?.statistics?.scoreHistory || [];
+  }, [analytics]);
 
   const chartData = useMemo(() => {
     if (!scoreHistory || scoreHistory.length === 0) {

@@ -59,20 +59,20 @@ export interface BaseSession {
   difficulty?: "easy" | "medium" | "hard";
   playerCount?: number;
   hostId: number;
-  joinCode: string; // Add this property for session joining functionality
+  joinCode: string;
 }
 
 export type SessionStatus = "active" | "completed" | "cancelled";
 
 export interface CreateSessionDto {
   sessionName: string;
-  hostId: number; // Required in API schema
-  gameIds?: number[]; // Optional array of game IDs from API schema
+  hostId: number;
+  gameIds?: number[];
   isActive?: boolean;
 }
 
 export interface UpdateSessionDto {
-  hostId: number; // Required in API schema
+  hostId: number;
   sessionName?: string;
   isActive?: boolean;
 }
@@ -86,24 +86,20 @@ export interface SessionState {
   error: string | null;
   wsConnections: Record<string, WebSocket>;
 
-  // CRUD operations
   fetchSessions: () => Promise<void>;
   fetchSession: (id: string) => Promise<Session>;
   createSession: (data: CreateSessionDto) => Promise<Session>;
   updateSession: (id: string, data: UpdateSessionDto) => Promise<Session>;
   deleteSession: (id: string) => Promise<void>;
 
-  // Session management
   startSession: (id: string) => Promise<void>;
   endSession: (id: string) => Promise<void>;
   moveToNextGame: (id: string) => Promise<void>;
 
-  // Player management
   addPlayer: (sessionId: string, playerName: string) => Promise<Session>;
   removePlayer: (sessionId: string, playerId: string) => Promise<Session>;
   assignPlayers: (id: string, players: { name: string }[]) => Promise<Session>;
 
-  // Team management
   createTeam: (sessionId: string, teamName: string) => Promise<Session>;
   updateTeam: (
     sessionId: string,
@@ -113,7 +109,6 @@ export interface SessionState {
   createRandomTeams: (id: string) => Promise<Session>;
   createCustomTeams: (id: string) => Promise<Session>;
 
-  // Scoring management
   updatePlayerScore: (
     sessionId: string,
     playerId: number,
@@ -125,7 +120,6 @@ export interface SessionState {
     score: number
   ) => Promise<Session>;
 
-  // WebSocket management
   subscribeToSessionUpdates: (id: string) => void;
   unsubscribeFromSessionUpdates: (id: string) => void;
   cleanup: () => void;
@@ -134,11 +128,11 @@ export interface SessionState {
 export interface SessionFormData {
   sessionName: string;
   isActive?: boolean;
-  hostId?: number; // Added hostId to match CreateSessionDto
+  hostId?: number;
 }
 
 export interface AssignPlayersDto {
-  hostId: number; // Required in API schema
+  hostId: number;
   players: { name: string }[];
 }
 

@@ -8,15 +8,14 @@ interface CreateHostPlayerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (hostId: number) => void;
-  sessionId?: string | number; // Still keeping this prop for flexibility
+  sessionId?: string | number;
 }
 
 export function CreateHostPlayerModal({
   isOpen,
   onClose,
   onSuccess,
-}: // We'll keep sessionId in the props but won't use it directly
-CreateHostPlayerModalProps) {
+}: CreateHostPlayerModalProps) {
   const [hostName, setHostName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,21 +30,16 @@ CreateHostPlayerModalProps) {
     setSuccessMessage(null);
 
     try {
-      // Call the API to create a host player - only sending the name
       const response = await api.post("/players/host", {
         name: hostName.trim(),
-        // Not sending sessionId at all, as it's optional
       });
 
-      // Show success message
       setSuccessMessage(`Host player "${hostName}" created successfully!`);
 
-      // Short delay to show the success message before closing
       setTimeout(() => {
-        // Pass the host ID to the parent component
         onSuccess(response.data.id);
         setHostName("");
-      }, 800); // Short delay so users can see the success message
+      }, 800);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create host player"
