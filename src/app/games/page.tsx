@@ -78,11 +78,10 @@ export default function GamesPage() {
   const handleAddGames = async (selectedGameIds: number[]) => {
     if (selectedSessionId) {
       try {
-        // Using the API to add games to session
         await api.post(`/sessions/${selectedSessionId}/games`, {
           gameIds: selectedGameIds,
         });
-        await fetchGames(); // Refresh games after adding
+        await fetchGames();
         setIsCreateModalOpen(false);
       } catch (error) {
         console.error("Failed to add games to session:", error);
@@ -95,13 +94,11 @@ export default function GamesPage() {
     customRules?: string;
   }) => {
     try {
-      // First create the game with valid properties from CreateGameDto
       const newGame = await createGame({
         name: data.name,
         rules: data.customRules,
       });
 
-      // If we have a sessionId, associate the game with the session
       if (selectedSessionId) {
         try {
           await api.post(`/sessions/${selectedSessionId}/games`, {
@@ -112,7 +109,7 @@ export default function GamesPage() {
         }
       }
 
-      await fetchGames(); // Refresh games after creation
+      await fetchGames();
       setIsCreateModalOpen(false);
     } catch (error) {
       console.error("Failed to create game:", error);
@@ -121,7 +118,6 @@ export default function GamesPage() {
 
   const handleCreateSession = async (sessionData: SessionFormData) => {
     try {
-      // Ensure hostId is provided by using the current hostId from store if not included in form data
       const sessionWithHost = {
         ...sessionData,
         hostId: sessionData.hostId ?? hostId ?? 0,

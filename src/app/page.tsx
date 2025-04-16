@@ -29,12 +29,10 @@ export default function Home() {
     fetchSessions();
   }, [fetchGames, fetchSessions]);
 
-  // Filter sessions to only show active sessions created by the current host
   const hostActiveSessions = sessions.filter(
     (session) => session.isActive && session.hostId === hostId
   );
 
-  // Filter games to only show games created by the current host
   const hostGames = games.filter(
     (game) => game.createdBy === hostId?.toString()
   );
@@ -428,7 +426,6 @@ export default function Home() {
         hostId={hostId}
         onSubmit={async (sessionData) => {
           try {
-            // Ensure hostId is provided to match CreateSessionDto requirements
             const sessionWithHost = {
               ...sessionData,
               hostId: sessionData.hostId ?? hostId ?? 0,
@@ -451,7 +448,7 @@ export default function Home() {
         isOpen={isHostPlayerModalOpen}
         onClose={() => setIsHostPlayerModalOpen(false)}
         onSuccess={handleHostCreated}
-        sessionId={undefined} // No specific session when creating from home page
+        sessionId={undefined}
       />
     </div>
   );

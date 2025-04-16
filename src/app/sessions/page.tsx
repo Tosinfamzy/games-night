@@ -23,10 +23,9 @@ export default function SessionsPage() {
 
   const handleCreateSession = async (data: SessionFormData) => {
     try {
-      // Ensure hostId is provided by using the current hostId from store if not included in form data
       const sessionData = {
         ...data,
-        hostId: data.hostId ?? hostId ?? 0, // Use form data hostId, fall back to store hostId, or 0 as last resort
+        hostId: data.hostId ?? hostId ?? 0,
       };
 
       if (!sessionData.hostId) {
@@ -135,7 +134,7 @@ export default function SessionsPage() {
           isOpen={isHostModalOpen}
           onClose={() => setIsHostModalOpen(false)}
           onSuccess={handleHostCreated}
-          sessionId={undefined} // No specific session when creating from sessions list
+          sessionId={undefined}
         />
       </div>
     </div>

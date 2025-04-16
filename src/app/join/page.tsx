@@ -8,7 +8,6 @@ import Link from "next/link";
 import { Session } from "@/types/session";
 import { api } from "@/services/api";
 
-// This component handles the parts that need useSearchParams
 function JoinPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,7 +33,6 @@ function JoinPageContent() {
       setIsJoinModalOpen(true);
       setIsFromQrCode(qrSource); // Track if this came from a QR code scan
 
-      // If we have both code and session ID, we can look up the session info
       if (sessionId) {
         lookupSession(code, sessionId);
       }
@@ -52,7 +50,6 @@ function JoinPageContent() {
         joinCode: code,
       });
 
-      // If successful and IDs match, pre-populate the session data
       if (lookupResponse.data && lookupResponse.data.id === sessionId) {
         setSessionData(lookupResponse.data);
       }
@@ -70,10 +67,9 @@ function JoinPageContent() {
     setIsJoinModalOpen(false);
     setJoinSuccess(true);
 
-    // Store player ID in local storage to identify this player
     localStorage.setItem("playerId", newPlayerId.toString());
 
-    // Delay navigation to show success message
+    // Delay navigation to show success message... need to be more elegant
     setTimeout(() => {
       router.push(`/sessions/${session.id}`);
     }, 2000);
