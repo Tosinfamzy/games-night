@@ -33,7 +33,6 @@ export function TeamManager({
   const handleAddPlayerToTeam = async (team: BaseTeam, player: BasePlayer) => {
     setIsAddingPlayer(player.id);
     try {
-      // Use the API endpoint directly if no callback is provided
       if (!onTeamUpdated) {
         await api.put(`/sessions/teams/${team.id}/players`, {
           playerId: player.id,
@@ -155,7 +154,6 @@ export function TeamManager({
 
   return (
     <div className="space-y-4">
-      {/* Team actions */}
       <div className="flex flex-wrap gap-4 mb-4">
         {canRandomizeTeams && (
           <Button
@@ -168,7 +166,6 @@ export function TeamManager({
         )}
       </div>
 
-      {/* Teams display */}
       {teams.map((team) => (
         <div key={team.id} className="p-4 bg-white shadow rounded-lg space-y-2">
           <h3 className="font-semibold text-gray-900">{team.name}</h3>

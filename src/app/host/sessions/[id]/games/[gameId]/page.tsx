@@ -17,7 +17,6 @@ export default function GamePage() {
       {currentSession ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            {/* Game content */}
             <div className="bg-white rounded-lg shadow p-6 space-y-4">
               <div className="mt-8">
                 <h3 className="text-xl font-semibold mb-4">Scoring</h3>
@@ -36,8 +35,7 @@ export default function GamePage() {
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div>{/* Sidebar content */}</div>
+          <div></div>
         </div>
       ) : (
         <div>Loading game details...</div>

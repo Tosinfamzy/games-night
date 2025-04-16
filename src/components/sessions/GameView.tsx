@@ -17,7 +17,6 @@ export function GameView({ game, players, teams }: GameViewProps) {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">{game.name}</h2>
 
-      {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="flex space-x-8" aria-label="Tabs">
           <button
@@ -43,7 +42,6 @@ export function GameView({ game, players, teams }: GameViewProps) {
         </nav>
       </div>
 
-      {/* Tab content */}
       <div className="mt-4">
         {activeTab === "scoring" && (
           <ScoringSystem

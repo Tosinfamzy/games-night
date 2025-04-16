@@ -20,7 +20,6 @@ function JoinPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [isFromQrCode, setIsFromQrCode] = useState(false);
 
-  // Check if there's a join code in URL
   useEffect(() => {
     if (!searchParams) return;
 
@@ -31,7 +30,7 @@ function JoinPageContent() {
     if (code) {
       setInitialCode(code);
       setIsJoinModalOpen(true);
-      setIsFromQrCode(qrSource); // Track if this came from a QR code scan
+      setIsFromQrCode(qrSource);
 
       if (sessionId) {
         lookupSession(code, sessionId);
@@ -39,13 +38,11 @@ function JoinPageContent() {
     }
   }, [searchParams]);
 
-  // Look up session info when we have both code and session ID
   const lookupSession = async (code: string, sessionId: string) => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // First try to verify the session with the join code
       const lookupResponse = await api.post("/sessions/lookup", {
         joinCode: code,
       });
@@ -69,7 +66,6 @@ function JoinPageContent() {
 
     localStorage.setItem("playerId", newPlayerId.toString());
 
-    // Delay navigation to show success message... need to be more elegant
     setTimeout(() => {
       router.push(`/sessions/${session.id}`);
     }, 2000);
@@ -139,7 +135,6 @@ function JoinPageContent() {
   );
 }
 
-// Loading fallback for the Suspense boundary
 function JoinPageLoading() {
   return (
     <div className="container mx-auto px-4 py-16">

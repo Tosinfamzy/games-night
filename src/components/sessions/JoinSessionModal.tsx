@@ -19,7 +19,7 @@ interface JoinSessionModalProps {
   onSuccess: (session: Session, playerId: number) => void;
   initialCode?: string | null;
   initialSessionData?: Session | null;
-  fromQrCode?: boolean; // New prop to indicate if opened from QR code scan
+  fromQrCode?: boolean;
 }
 
 export function JoinSessionModal({
@@ -28,7 +28,7 @@ export function JoinSessionModal({
   onSuccess,
   initialCode = null,
   initialSessionData = null,
-  fromQrCode = false, // Default to false for backward compatibility
+  fromQrCode = false,
 }: JoinSessionModalProps) {
   const [step, setStep] = useState<"code" | "name">(
     fromQrCode ? "name" : "code"
@@ -39,16 +39,13 @@ export function JoinSessionModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Use initialCode and initialSessionData if provided
   useEffect(() => {
     if (isOpen) {
-      // Reset form when modal opens
       setError(null);
 
       if (initialCode) {
         setJoinCode(initialCode);
 
-        // If we have initial session data from the QR code
         if (initialSessionData) {
           setSessionInfo({
             id: initialSessionData.id,
@@ -57,9 +54,8 @@ export function JoinSessionModal({
             isActive: initialSessionData.isActive,
             joinCode: initialSessionData.joinCode,
           });
-          setStep("name"); // Skip to name step
+          setStep("name");
         } else if (fromQrCode) {
-          // If coming from QR but no session data, do the lookup immediately
           handleCodeCheck(initialCode);
         }
       }
@@ -73,7 +69,6 @@ export function JoinSessionModal({
     setError(null);
 
     try {
-      // First verify the session exists with this code
       const response = await api.post("/sessions/lookup", {
         joinCode: code.trim(),
       });
@@ -104,29 +99,25 @@ export function JoinSessionModal({
     setError(null);
 
     try {
-      // First create a player
       const playerResponse = await api.post("/players", {
         name: playerName.trim(),
         type: "participant",
-        sessionId: sessionInfo.id.toString(), // Add the sessionId parameter
+        sessionId: sessionInfo.id.toString(),
       });
 
       const playerId = playerResponse.data.id;
 
-      // Then join the session with that player
       const joinResponse = await api.post("/sessions/join", {
         joinCode: joinCode.trim(),
         playerId,
       });
 
-      // Pass the session and player ID back to the parent component
       onSuccess(joinResponse.data, playerId);
 
-      // Reset form
       setJoinCode("");
       setPlayerName("");
       setSessionInfo(null);
-      setStep(fromQrCode ? "name" : "code"); // Stay on name step if from QR
+      setStep(fromQrCode ? "name" : "code");
     } catch (err) {
       setError(
         err instanceof Error
@@ -139,7 +130,6 @@ export function JoinSessionModal({
   };
 
   const handleBackClick = () => {
-    // If from QR code, closing is better than going back to code step
     if (fromQrCode) {
       handleClose();
     } else {
@@ -158,7 +148,6 @@ export function JoinSessionModal({
     onClose();
   };
 
-  // Modified title to make it clear when coming from QR code
   const modalTitle = fromQrCode ? "Enter Your Name to Join" : "Join Session";
 
   return (

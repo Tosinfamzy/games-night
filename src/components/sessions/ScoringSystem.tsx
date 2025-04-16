@@ -51,19 +51,15 @@ export function ScoringSystem({
     const score = playerScores[playerId];
     if (!score) return;
 
-    // Set submitting state for this player
     setSubmitting((prev) => ({ ...prev, [`player-${playerId}`]: true }));
 
     try {
-      // First, update through the WebSocket for real-time updates
       if (connected) {
         wsService.updatePlayerScore(playerId, gameId, score);
       }
 
-      // Then, use the API for persistence
       await onUpdateScore(playerId, gameId, score);
 
-      // Clear the input after successful submission
       setPlayerScores((prev) => ({ ...prev, [playerId]: 0 }));
     } catch (error) {
       console.error("Failed to update score:", error);
@@ -76,19 +72,15 @@ export function ScoringSystem({
     const score = teamScores[teamId];
     if (!score) return;
 
-    // Set submitting state for this team
     setSubmitting((prev) => ({ ...prev, [`team-${teamId}`]: true }));
 
     try {
-      // First, update through the WebSocket for real-time updates
       if (connected) {
         wsService.updateTeamScore(teamId, gameId, score);
       }
 
-      // Then, use the API for persistence
       await onUpdateTeamScore(teamId, gameId, score);
 
-      // Clear the input after successful submission
       setTeamScores((prev) => ({ ...prev, [teamId]: 0 }));
     } catch (error) {
       console.error("Failed to update team score:", error);
@@ -97,7 +89,6 @@ export function ScoringSystem({
     }
   };
 
-  // Function to handle quick score updates (like +1, +5, etc.)
   const quickScore = async (
     entityId: number,
     points: number,
@@ -134,7 +125,6 @@ export function ScoringSystem({
 
   return (
     <div className="space-y-6">
-      {/* Team Scores */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">Team Scores</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -195,7 +185,6 @@ export function ScoringSystem({
         </div>
       </div>
 
-      {/* Player Scores */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">Player Scores</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

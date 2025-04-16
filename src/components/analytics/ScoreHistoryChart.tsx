@@ -17,7 +17,6 @@ import { Card } from "@/components/ui/Card";
 import { GameAnalytics } from "@/types/game";
 import "chartjs-adapter-date-fns";
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -34,7 +33,6 @@ interface ScoreHistoryChartProps {
   className?: string;
 }
 
-// Define a type for the score entry data points
 interface ScoreDataPoint {
   x: Date;
   y: number;
@@ -54,7 +52,6 @@ export function ScoreHistoryChart({
       };
     }
 
-    // Group scores by player
     const playerScores: Record<string, ScoreDataPoint[]> = {};
 
     scoreHistory.forEach((entry) => {
@@ -71,12 +68,10 @@ export function ScoreHistoryChart({
       });
     });
 
-    // Sort entries by timestamp for each player
     Object.keys(playerScores).forEach((player) => {
       playerScores[player].sort((a, b) => a.x.getTime() - b.x.getTime());
     });
 
-    // Create datasets for each player with cumulative scores
     const datasets = Object.keys(playerScores).map((player, index) => {
       const colorIndex = index % colors.length;
       let cumulativeScore = 0;
@@ -174,7 +169,6 @@ export function ScoreHistoryChart({
   );
 }
 
-// Chart colors
 const colors = [
   "rgb(53, 162, 235)",
   "rgb(255, 99, 132)",
