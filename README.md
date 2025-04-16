@@ -39,7 +39,7 @@ The application will be available at [http://localhost:5173](http://localhost:51
 
 ## Project Structure
 
-- `/src/app`: Next.js app router pages
+- `/src/app`: Next.js App Router pages and layouts
 - `/src/components`: Reusable React components
   - `/analytics`: Analytics dashboards and charts
   - `/games`: Game-related components

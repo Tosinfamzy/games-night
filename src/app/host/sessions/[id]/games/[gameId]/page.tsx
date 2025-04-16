@@ -1,10 +1,12 @@
-import { useRouter } from "next/router";
+"use client";
+
+import { useParams } from "next/navigation";
 import { useSessionStore } from "@/store/sessionStore";
 import { ScoringSystem } from "@/components/sessions/ScoringSystem";
 
 export default function GamePage() {
-  const { query } = useRouter();
-  const gameId = Number(query.gameId);
+  const params = useParams();
+  const gameId = params?.gameId ? Number(params.gameId) : 0;
   const { currentSession, updatePlayerScore, updateTeamScore } =
     useSessionStore();
 
