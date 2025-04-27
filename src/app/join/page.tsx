@@ -67,7 +67,7 @@ function JoinPageContent() {
     localStorage.setItem("playerId", newPlayerId.toString());
 
     setTimeout(() => {
-      router.push(`/sessions/${session.id}`);
+      router.push(`/players/${newPlayerId}`);
     }, 2000);
   };
 
@@ -82,7 +82,7 @@ function JoinPageContent() {
               </h2>
               <p className="text-green-700 mb-4">
                 You&apos;ve joined {sessionData?.sessionName || "the session"}.
-                Redirecting you...
+                Redirecting you to your player dashboard...
               </p>
               <div className="animate-pulse h-2 bg-green-200 rounded mx-auto w-3/4"></div>
             </div>
