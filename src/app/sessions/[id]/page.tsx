@@ -228,7 +228,18 @@ export default function SessionPage() {
                       {game.rules && (
                         <div>
                           <p className="font-medium text-gray-900">Rules:</p>
-                          <p className="mt-1 text-gray-600">{game.rules}</p>
+                          <div className="mt-1 text-gray-600">
+                            {game.rules.map((rule) => (
+                              <div key={rule.id} className="mb-2">
+                                <p className="font-medium text-gray-900">
+                                  {rule.name}
+                                </p>
+                                <p className="text-gray-600">
+                                  {rule.description}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -236,6 +247,13 @@ export default function SessionPage() {
                       <Link href={`/games/${game.id}`}>
                         <Button variant="outline">View Game</Button>
                       </Link>
+                      {hostId && (
+                        <Link
+                          href={`/host/sessions/${sessionId}/games/${game.id}`}
+                        >
+                          <Button variant="outline">Manage Game</Button>
+                        </Link>
+                      )}
                       {currentSession.isActive && (
                         <>
                           <Button

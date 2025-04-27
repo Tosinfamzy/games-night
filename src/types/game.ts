@@ -1,4 +1,9 @@
-export type GameType = "monopoly" | "uno" | "chess" | "checkers" | "custom";
+export type GameType =
+  | "uno"
+  | "articulate"
+  | "cards_against_humanity"
+  | "blackjack"
+  | "custom";
 export type GameStatus = "pending" | "active" | "completed" | "cancelled";
 export type GamePhase =
   | "setup"
@@ -6,6 +11,16 @@ export type GamePhase =
   | "in_progress"
   | "paused"
   | "completed";
+
+export interface Rule {
+  id: number;
+  name: string;
+  description: string;
+  isDefaultEnabled: boolean;
+  game?: Game;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface Player {
   id: number;
@@ -40,7 +55,14 @@ export interface GameSettings {
 
 export interface CreateGameDto {
   name: string;
-  rules?: string;
+  type: GameType;
+  description?: string;
+}
+
+export interface CreateRuleDto {
+  name: string;
+  description: string;
+  isDefaultEnabled: boolean;
 }
 
 export interface GameSetupDto {
@@ -55,7 +77,7 @@ export interface AddPlayerDto {
 export interface Game {
   id: number;
   name: string;
-  rules?: string;
+  description?: string;
   state: GamePhase;
   currentRound?: number;
   totalRounds?: number;
@@ -82,11 +104,12 @@ export interface Game {
     updatedAt: string;
     playerCount: number;
   }>;
+  rules: Rule[]; // Added rules relationship
   createdAt: string;
   updatedAt: string;
   createdBy: string;
   status: GameStatus;
-  type?: string;
+  type: GameType;
   maxPlayers?: number;
   minPlayers?: number;
   customRules?: string;

@@ -15,6 +15,7 @@
     },
     "/games": {
       "get": {
+        "description": "Returns the predefined set of games with their rules",
         "operationId": "GamesController_findAll",
         "parameters": [],
         "responses": {
@@ -370,6 +371,411 @@
         },
         "summary": "Update game state",
         "tags": ["games"]
+      }
+    },
+    "/games/{id}/rules": {
+      "get": {
+        "operationId": "GamesController_getGameRules",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Game ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns all rules for the game",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Rule"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get all rules for a game",
+        "tags": ["games"]
+      },
+      "post": {
+        "operationId": "GamesController_addRule",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Game ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRuleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Rule added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rule"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Add a new rule to a game",
+        "tags": ["games"]
+      }
+    },
+    "/games/rules/{ruleId}": {
+      "get": {
+        "operationId": "GamesController_getRule",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "description": "Rule ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns the rule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rule"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get a specific rule",
+        "tags": ["games"]
+      },
+      "put": {
+        "operationId": "GamesController_updateRule",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "description": "Rule ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rule updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rule"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update a rule",
+        "tags": ["games"]
+      },
+      "delete": {
+        "operationId": "GamesController_deleteRule",
+        "parameters": [
+          {
+            "name": "ruleId",
+            "required": true,
+            "in": "path",
+            "description": "Rule ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rule deleted successfully"
+          }
+        },
+        "summary": "Delete a rule",
+        "tags": ["games"]
+      }
+    },
+    "/games/initialize-defaults": {
+      "post": {
+        "operationId": "GamesController_initializeDefaults",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Default games and rules initialized"
+          }
+        },
+        "summary": "Initialize default games and rules",
+        "tags": ["games"]
+      }
+    },
+    "/games/{gameId}/rules": {
+      "post": {
+        "operationId": "GameRulesController_create",
+        "parameters": [
+          {
+            "name": "gameId",
+            "required": true,
+            "in": "path",
+            "description": "ID of the game",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGameRulesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Game rules created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameRules"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Game not found"
+          }
+        },
+        "summary": "Create new game rules version",
+        "tags": ["game-rules"]
+      },
+      "get": {
+        "operationId": "GameRulesController_findAll",
+        "parameters": [
+          {
+            "name": "gameId",
+            "required": true,
+            "in": "path",
+            "description": "ID of the game",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns all versions of game rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GameRules"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get all versions of game rules",
+        "tags": ["game-rules"]
+      }
+    },
+    "/games/{gameId}/rules/active": {
+      "get": {
+        "operationId": "GameRulesController_findActive",
+        "parameters": [
+          {
+            "name": "gameId",
+            "required": true,
+            "in": "path",
+            "description": "ID of the game",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns active version of game rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameRules"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No active rules found"
+          }
+        },
+        "summary": "Get active version of game rules",
+        "tags": ["game-rules"]
+      }
+    },
+    "/games/{gameId}/rules/{version}": {
+      "get": {
+        "operationId": "GameRulesController_findOne",
+        "parameters": [
+          {
+            "name": "gameId",
+            "required": true,
+            "in": "path",
+            "description": "ID of the game",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "required": true,
+            "in": "path",
+            "description": "Version number (e.g., 1.0.0)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns specific version of game rules",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameRules"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Version not found"
+          }
+        },
+        "summary": "Get specific version of game rules",
+        "tags": ["game-rules"]
+      }
+    },
+    "/games/{gameId}/rules/{version}/activate": {
+      "post": {
+        "operationId": "GameRulesController_setActive",
+        "parameters": [
+          {
+            "name": "gameId",
+            "required": true,
+            "in": "path",
+            "description": "ID of the game",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "required": true,
+            "in": "path",
+            "description": "Version number to activate",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version activated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameRules"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Version not found"
+          }
+        },
+        "summary": "Set specific version as active",
+        "tags": ["game-rules"]
+      }
+    },
+    "/games/{gameId}/rules/{version1}/compare/{version2}": {
+      "get": {
+        "operationId": "GameRulesController_compareVersions",
+        "parameters": [
+          {
+            "name": "gameId",
+            "required": true,
+            "in": "path",
+            "description": "ID of the game",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version1",
+            "required": true,
+            "in": "path",
+            "description": "First version to compare",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version2",
+            "required": true,
+            "in": "path",
+            "description": "Second version to compare",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns differences between versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "One or both versions not found"
+          }
+        },
+        "summary": "Compare two versions of game rules",
+        "tags": ["game-rules"]
       }
     },
     "/sessions": {
@@ -1645,6 +2051,60 @@
         },
         "required": ["id", "status", "game", "player", "createdAt", "updatedAt"]
       },
+      "Rule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Unique identifier of the rule",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the rule",
+            "example": "No Stacking"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of what the rule does",
+            "example": "Players cannot stack +2 or +4 cards"
+          },
+          "isDefaultEnabled": {
+            "type": "boolean",
+            "description": "Whether this rule is enabled by default",
+            "example": true
+          },
+          "game": {
+            "description": "The game this rule belongs to",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Game"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the rule was created",
+            "example": "2024-03-18T12:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the rule was last updated",
+            "example": "2024-03-18T12:00:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "isDefaultEnabled",
+          "game",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "Game": {
         "type": "object",
         "properties": {
@@ -1656,12 +2116,23 @@
           "name": {
             "type": "string",
             "description": "The name of the game",
-            "example": "Charades"
+            "example": "UNO"
           },
-          "rules": {
+          "type": {
             "type": "string",
-            "description": "Rules of the game",
-            "example": "Act out a word without speaking"
+            "description": "Type of game",
+            "enum": [
+              "uno",
+              "articulate",
+              "cards_against_humanity",
+              "blackjack"
+            ],
+            "example": "uno"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the game",
+            "example": "A classic card game where players race to empty their hands"
           },
           "state": {
             "type": "string",
@@ -1693,6 +2164,13 @@
               "$ref": "#/components/schemas/GameParticipant"
             }
           },
+          "rules": {
+            "description": "Rules available for this game",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Rule"
+            }
+          },
           "sessions": {
             "description": "Sessions this game belongs to",
             "type": "array",
@@ -1716,9 +2194,11 @@
         "required": [
           "id",
           "name",
+          "type",
           "state",
           "analytics",
           "participants",
+          "rules",
           "sessions",
           "createdAt",
           "updatedAt"
@@ -1796,15 +2276,26 @@
           "name": {
             "type": "string",
             "description": "The name of the game",
-            "example": "Charades"
+            "example": "UNO"
           },
-          "rules": {
+          "type": {
             "type": "string",
-            "description": "Rules of the game",
-            "example": "Act out a word without speaking"
+            "description": "Type of game",
+            "enum": [
+              "uno",
+              "articulate",
+              "cards_against_humanity",
+              "blackjack"
+            ],
+            "example": "uno"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the game",
+            "example": "A classic card game where players race to empty their hands"
           }
         },
-        "required": ["name"]
+        "required": ["name", "type"]
       },
       "GameSetupDto": {
         "type": "object",
@@ -1834,6 +2325,132 @@
           }
         },
         "required": ["playerId"]
+      },
+      "CreateRuleDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the rule",
+            "example": "No Stacking"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of what the rule does",
+            "example": "Players cannot stack +2 or +4 cards"
+          },
+          "isDefaultEnabled": {
+            "type": "boolean",
+            "description": "Whether this rule is enabled by default",
+            "example": true
+          }
+        },
+        "required": ["name", "description"]
+      },
+      "CreateGameRulesDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Version number following semantic versioning (e.g., 1.0.0)",
+            "example": "1.0.0"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the rules version",
+            "example": "Standard Rules v1.0"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the rules",
+            "example": "Complete set of rules for playing the game..."
+          },
+          "rulesContent": {
+            "type": "object",
+            "description": "JSON structure containing the actual rules",
+            "example": {
+              "setup": ["Step 1", "Step 2"],
+              "gameplay": ["Rule 1", "Rule 2"],
+              "scoring": ["Point 1", "Point 2"]
+            }
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether this should be the active version",
+            "example": true
+          }
+        },
+        "required": ["version", "title", "description", "rulesContent"]
+      },
+      "GameRules": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Unique identifier of the game rules",
+            "example": 1
+          },
+          "version": {
+            "type": "string",
+            "description": "Version number of the rules",
+            "example": "1.0.0"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the rules version",
+            "example": "Standard Rules v1.0"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the rules",
+            "example": "Complete set of rules for playing the game..."
+          },
+          "rulesContent": {
+            "type": "object",
+            "description": "JSON structure containing the actual rules",
+            "example": {
+              "setup": ["Step 1", "Step 2"],
+              "gameplay": ["Rule 1", "Rule 2"],
+              "scoring": ["Point 1", "Point 2"]
+            }
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether this is the current active version",
+            "example": true
+          },
+          "game": {
+            "description": "The game these rules belong to",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Game"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the rules were created",
+            "example": "2024-03-18T12:00:00Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When the rules were last updated",
+            "example": "2024-03-18T12:00:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "title",
+          "description",
+          "rulesContent",
+          "isActive",
+          "game",
+          "createdAt",
+          "updatedAt"
+        ]
       },
       "CreateSessionDto": {
         "type": "object",

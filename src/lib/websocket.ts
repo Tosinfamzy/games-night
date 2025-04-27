@@ -2,14 +2,12 @@ import { io, Socket } from "socket.io-client";
 import { Game } from "@/types/game";
 import { Session, BasePlayer, BaseTeam } from "@/types/session";
 
-// Event name literals to ensure type safety with string keys
 type ConnectionStatusType =
   | "connected"
   | "disconnected"
   | "connecting"
   | "error";
 
-// Standard interfaces for events based on API schema
 interface GameScore {
   playerId: string;
   score: number;
@@ -51,7 +49,6 @@ interface TeamScoreUpdate {
   teamScores: TeamScore[];
 }
 
-// Interfaces for real-time score updates based on API schema
 interface PlayerScoreEvent {
   playerId: number;
   gameId: number;
@@ -68,14 +65,12 @@ interface TeamScoreEvent {
   teamName?: string;
 }
 
-// Define static event types
 interface StaticEventMap {
   connection_status: ConnectionStatusType;
   "player:score:update": PlayerScoreEvent;
   "team:score:update": TeamScoreEvent;
 }
 
-// Interface for session event listener types
 interface SessionEventTypes {
   update: SessionUpdate;
   players: PlayerUpdate;
@@ -83,7 +78,6 @@ interface SessionEventTypes {
   score: GameScoreUpdate;
 }
 
-// Generic event handler type
 type EventHandler<T> = (data: T) => void;
 
 class WebSocketService {
@@ -94,7 +88,6 @@ class WebSocketService {
   private reconnectDelay = 1000;
   private connectionStatus: ConnectionStatusType = "disconnected";
 
-  // Store listeners with proper typings, using SessionEventTypes
   private connectionListeners = new Set<EventHandler<ConnectionStatusType>>();
   private playerScoreListeners = new Set<EventHandler<PlayerScoreEvent>>();
   private teamScoreListeners = new Set<EventHandler<TeamScoreEvent>>();
@@ -212,7 +205,6 @@ class WebSocketService {
     return this.connectionStatus;
   }
 
-  // Type-safe event handlers using specific listener collections
   on<K extends keyof StaticEventMap>(
     event: K,
     handler: EventHandler<StaticEventMap[K]>
@@ -245,7 +237,6 @@ class WebSocketService {
     }
   }
 
-  // Type-safe notification methods for each event type
   private notifyConnectionListeners(status: ConnectionStatusType): void {
     this.connectionListeners.forEach((listener) => {
       try {
@@ -276,7 +267,6 @@ class WebSocketService {
     });
   }
 
-  // Game-specific methods
   subscribeToGame(
     gameId: string,
     callbacks: {
@@ -294,12 +284,10 @@ class WebSocketService {
       }
     }
 
-    // Initialize listeners for this game if they don't exist
     if (!this.gameEventListeners.has(gameId)) {
       this.gameEventListeners.set(gameId, {});
     }
 
-    // Get the listeners for this game
     const gameListeners = this.gameEventListeners.get(gameId)!;
 
     this.socket.emit("join:game", { gameId });
@@ -352,11 +340,9 @@ class WebSocketService {
     this.socket.off(`game:${gameId}:teamScore`);
     this.socket.off(`game:${gameId}:playerScore`);
 
-    // Clean up the listeners
     this.gameEventListeners.delete(gameId);
   }
 
-  // Session-specific methods
   subscribeToSession(
     sessionId: string,
     callbacks: {
@@ -374,12 +360,10 @@ class WebSocketService {
       }
     }
 
-    // Initialize listeners for this session if they don't exist
     if (!this.sessionEventListeners.has(sessionId)) {
       this.sessionEventListeners.set(sessionId, {});
     }
 
-    // Get the listeners for this session
     const sessionListeners = this.sessionEventListeners.get(sessionId)!;
 
     this.socket.emit("join:session", { sessionId });
@@ -429,11 +413,9 @@ class WebSocketService {
     this.socket.off(`session:${sessionId}:teams`);
     this.socket.off(`session:${sessionId}:score`);
 
-    // Clean up the listeners
     this.sessionEventListeners.delete(sessionId);
   }
 
-  // Score update methods
   updatePlayerScore(playerId: number, gameId: number, points: number): boolean {
     if (!this.socket) {
       console.error("Cannot update player score: socket not initialized");

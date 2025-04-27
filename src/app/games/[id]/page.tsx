@@ -11,6 +11,7 @@ import { PlayerList } from "@/components/sessions/PlayerList";
 import { AnalyticsDashboard } from "@/components/analytics";
 import { RealtimeScoreUpdates } from "@/components/sessions/RealtimeScoreUpdates";
 import { SessionNavigation } from "@/components/sessions/SessionNavigation";
+import { GameRulesManager } from "@/components/games";
 import {
   Card,
   CardHeader,
@@ -119,16 +120,14 @@ export default function GamePage() {
     error,
   } = useGameStore();
 
-  const { currentSession, fetchSession } = useSessionStore();
+  const { currentSession, fetchSession, hostId } = useSessionStore();
 
-  // First effect to fetch games
   useEffect(() => {
     if (!gameId) return;
     setIsPageLoading(true);
     fetchGames();
   }, [gameId, fetchGames]);
 
-  // Second effect to set current game when games are loaded
   useEffect(() => {
     if (!gameId || isLoading || games.length === 0) return;
 
@@ -152,20 +151,17 @@ export default function GamePage() {
     }
   }, [currentGame?.sessions, fetchSession]);
 
-  // Fetch leaderboards when game or session changes
   useEffect(() => {
     async function fetchLeaderboards() {
       const activeSession = currentGame?.sessions?.find((s) => s.isActive);
       if (!activeSession?.id || !gameId) return;
 
       try {
-        // Fetch game-specific leaderboard
         const gameLeaderboardResponse = await api.get(
           `/scoring/leaderboard/${activeSession.id}/${gameId}`
         );
         setGameLeaderboard(gameLeaderboardResponse.data);
 
-        // Fetch session-wide scores
         const sessionScoresResponse = await api.get(
           `/scoring/session/${activeSession.id}`
         );
@@ -178,7 +174,6 @@ export default function GamePage() {
     fetchLeaderboards();
   }, [currentGame?.sessions, gameId]);
 
-  // Subscribe to score updates when game or session changes
   useEffect(() => {
     async function subscribeToScores() {
       const activeSession = currentGame?.sessions?.find((s) => s.isActive);
@@ -194,7 +189,6 @@ export default function GamePage() {
     subscribeToScores();
   }, [currentGame?.sessions]);
 
-  // Extract fetchGamePlayers function to be reusable
   const fetchGamePlayers = async () => {
     if (!gameId) return;
 
@@ -208,7 +202,6 @@ export default function GamePage() {
     }
   };
 
-  // Update useEffect to use the extracted function
   useEffect(() => {
     fetchGamePlayers();
   }, [gameId]);
@@ -220,7 +213,6 @@ export default function GamePage() {
         const response = await api.get<GameAnalytics>(
           `/analytics/games/${gameId}`
         );
-        // Transform analytics data into score history format
         const history = response.data.statistics.scoreHistory || [];
         setScoreHistory(history);
       } catch (error) {
@@ -244,7 +236,6 @@ export default function GamePage() {
         points,
       } as PlayerScoreDto);
 
-      // Refresh leaderboards after updating score
       const [gameLeaderboardResponse, sessionScoresResponse] =
         await Promise.all([
           api.get(`/scoring/leaderboard/${activeSession.id}/${gameId}`),
@@ -276,11 +267,29 @@ export default function GamePage() {
     }
   };
 
+  const handleGameStateChange = async (newState: string) => {
+    if (!gameId || !isHost) return;
+
+    try {
+      await api.put(`/games/${gameId}/state`, {
+        state: newState,
+      });
+
+      // Refresh game data
+      await fetchGames();
+
+      // Show feedback (TODO: add a toast notification system)
+      console.log(`Game state changed to ${newState}`);
+    } catch (error) {
+      console.error("Failed to update game state:", error);
+    }
+  };
+
   const handleJoinGame = async () => {
     if (gameId) {
       try {
         await api.post(`/games/${gameId}/players`, {
-          playerId: 1, // TODO: Get actual player ID from auth/session
+          playerId: hostId,
         } as AddPlayerDto);
         await fetchGames();
       } catch (error) {
@@ -290,9 +299,13 @@ export default function GamePage() {
   };
 
   const handleLeaveGame = async () => {
-    if (gameId && confirm("Are you sure you want to leave this game?")) {
+    if (
+      gameId &&
+      hostId &&
+      confirm("Are you sure you want to leave this game?")
+    ) {
       try {
-        await api.delete(`/games/${gameId}/players/1`); // TODO: Get actual player ID
+        await api.delete(`/games/${gameId}/players/${hostId}`);
         await fetchGames();
       } catch (error) {
         console.error("Failed to leave game:", error);
@@ -307,9 +320,17 @@ export default function GamePage() {
   };
 
   const handleEndGame = async () => {
-    if (gameId && confirm("Are you sure you want to end this game?")) {
-      await api.delete(`/games/${gameId}/players/1`); // TODO: Get actual player ID
-      await fetchGames();
+    if (
+      gameId &&
+      hostId &&
+      confirm("Are you sure you want to end this game?")
+    ) {
+      try {
+        await api.delete(`/games/${gameId}/players/${hostId}`);
+        await fetchGames();
+      } catch (error) {
+        console.error("Failed to leave game:", error);
+      }
     }
   };
 
@@ -332,9 +353,9 @@ export default function GamePage() {
   };
 
   const handlePlayerReady = async () => {
-    if (gameId) {
+    if (gameId && hostId) {
       try {
-        await api.put(`/games/${gameId}/players/1/ready`); // TODO: Get actual player ID
+        await api.put(`/games/${gameId}/players/${hostId}/ready`);
         await fetchGames();
       } catch (error) {
         console.error("Failed to mark player as ready:", error);
@@ -860,6 +881,8 @@ export default function GamePage() {
           />
         )}
 
+        <GameRulesManager game={currentGame} />
+
         <div className="flex flex-wrap gap-4 justify-end mt-8 mb-12">
           <div className="w-full">
             <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg mb-4">
@@ -946,6 +969,31 @@ export default function GamePage() {
             <Button variant="outline" onClick={handleCompleteGame}>
               Complete Game
             </Button>
+          )}
+
+          {isHost && (
+            <div className="flex items-center gap-2">
+              <select
+                onChange={(e) => handleGameStateChange(e.target.value)}
+                className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Change Game State</option>
+                <option value="setup">Setup</option>
+                <option value="ready">Ready</option>
+                <option value="in_progress">In Progress</option>
+                <option value="paused">Paused</option>
+                <option value="completed">Completed</option>
+              </select>
+              <Button
+                onClick={() =>
+                  handleGameStateChange(
+                    document.querySelector("select")?.value || ""
+                  )
+                }
+              >
+                Update State
+              </Button>
+            </div>
           )}
         </div>
       </div>

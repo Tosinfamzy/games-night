@@ -125,15 +125,17 @@ export function ScoringSystem({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Team Scores</h3>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Team Scores
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {teams.map((team) => (
             <div
               key={team.id}
               className="border rounded-lg p-4 hover:bg-gray-50"
             >
-              <h4 className="font-medium mb-2">{team.name}</h4>
+              <h4 className="font-medium text-gray-900 mb-2">{team.name}</h4>
               <div className="flex items-center space-x-2 mb-3">
                 <Input
                   type="number"
@@ -185,12 +187,14 @@ export function ScoringSystem({
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Player Scores</h3>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Player Scores
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {players.map((player) => (
             <div key={player.id} className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">{player.name}</h4>
+              <h4 className="font-medium text-gray-900 mb-2">{player.name}</h4>
               <div className="flex items-center space-x-2 mb-3">
                 <Input
                   type="number"
