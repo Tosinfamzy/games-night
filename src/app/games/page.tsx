@@ -14,6 +14,7 @@ import { useSessionStore } from "@/store/sessionStore";
 import Link from "next/link";
 import { api } from "@/services/api";
 import { useRouter } from "next/navigation";
+import { GameType } from "@/types/game";
 
 export default function GamesPage() {
   const router = useRouter();
@@ -92,11 +93,13 @@ export default function GamesPage() {
   const handleCreateGame = async (data: {
     name: string;
     customRules?: string;
+    type?: GameType;
   }) => {
     try {
       const newGame = await createGame({
         name: data.name,
-        rules: data.customRules,
+        type: data.type || "custom",
+        description: data.customRules,
       });
 
       if (selectedSessionId) {
@@ -228,7 +231,14 @@ export default function GamesPage() {
                   Round: {game.currentRound} / {game.totalRounds}
                 </p>
                 <p>Created: {new Date(game.createdAt).toLocaleDateString()}</p>
-                {game.rules && <p className="italic">Rules: {game.rules}</p>}
+                {game.rules && game.rules.length > 0 && (
+                  <p className="italic">
+                    Rules: {game.rules.map((rule) => rule.name).join(", ")}
+                  </p>
+                )}
+                {game.customRules && (
+                  <p className="italic">Rules: {game.customRules}</p>
+                )}
               </div>
               <div className="mt-6">
                 <Button

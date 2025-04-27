@@ -104,7 +104,7 @@ export interface Game {
     updatedAt: string;
     playerCount: number;
   }>;
-  rules: Rule[]; // Added rules relationship
+  rules: Rule[];
   createdAt: string;
   updatedAt: string;
   createdBy: string;
@@ -142,7 +142,6 @@ export interface GameStoreState {
   isLoading: boolean;
   error: string | null;
 
-  // CRUD operations
   fetchGames: () => Promise<Game[]>;
   setCurrentGame: (gameId: string) => void;
   createGame: (data: CreateGameDto) => Promise<Game>;
