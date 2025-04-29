@@ -19,6 +19,10 @@ export default function GamePage() {
   const { games, fetchGames } = useGameStore();
   const [currentGame, setCurrentGame] = useState<Game | null>(null);
   const [isStateUpdating, setIsStateUpdating] = useState(false);
+  const [stateUpdateSuccess, setStateUpdateSuccess] = useState<string | null>(
+    null
+  );
+  const [stateUpdateError, setStateUpdateError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGames();
@@ -39,6 +43,8 @@ export default function GamePage() {
     if (!gameId) return;
 
     setIsStateUpdating(true);
+    setStateUpdateSuccess(null);
+    setStateUpdateError(null);
     try {
       await api.put(`/games/${gameId}/state`, {
         state: newState,
@@ -48,8 +54,10 @@ export default function GamePage() {
       await fetchGames();
 
       // Show feedback (You might want to add a toast notification system)
+      setStateUpdateSuccess(`Game state changed to ${newState}`);
       console.log(`Game state changed to ${newState}`);
     } catch (error) {
+      setStateUpdateError("Failed to update game state");
       console.error("Failed to update game state:", error);
     } finally {
       setIsStateUpdating(false);
@@ -161,6 +169,16 @@ export default function GamePage() {
                       Select a stage and click Change Stage to update the
                       current game status.
                     </p>
+                    {stateUpdateSuccess && (
+                      <p className="mt-2 text-sm text-green-700">
+                        {stateUpdateSuccess}
+                      </p>
+                    )}
+                    {stateUpdateError && (
+                      <p className="mt-2 text-sm text-red-700">
+                        {stateUpdateError}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

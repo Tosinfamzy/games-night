@@ -13,9 +13,15 @@ export function SessionQRCode({
   sessionId,
   className = "",
 }: SessionQRCodeProps) {
+  // Ensure the join code and session ID are properly encoded for URLs
+  const encodedJoinCode = encodeURIComponent(joinCode.trim());
+
+  // Build the URL based on available information
   const joinUrl = `${
     typeof window !== "undefined" ? window.location.origin : ""
-  }/join?code=${joinCode}${sessionId ? `&session=${sessionId}` : ""}&source=qr`;
+  }/join?code=${encodedJoinCode}${
+    sessionId ? `&session=${encodeURIComponent(sessionId)}` : ""
+  }&source=qr`;
 
   return (
     <Card className={`overflow-hidden ${className}`}>
@@ -27,9 +33,15 @@ export function SessionQRCode({
               <QRCodeSVG value={joinUrl} size={180} />
             </div>
           </div>
-          <p className="text-xs text-center text-gray-500 max-w-[200px]">
-            Scan this QR code with your phone camera to quickly join the session
-          </p>
+          <div className="text-center">
+            <p className="text-xs text-gray-500 max-w-[200px] mb-2">
+              Scan this QR code with your phone camera to quickly join the
+              session
+            </p>
+            <p className="text-xs font-medium">
+              Join code: <span className="font-bold">{joinCode}</span>
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

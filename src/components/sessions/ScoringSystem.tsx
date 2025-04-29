@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BasePlayer, BaseTeam } from "@/types/session";
 import { Input } from "@/components/ui/Input";
 import { wsService } from "@/lib/websocket";
 import { useWebSocket } from "@/components/providers/WebSocketProvider";
 import { Button } from "../ui";
+import { Badge } from "@/components/ui/Badge";
 
 interface ScoringSystemProps {
   teams: BaseTeam[];
@@ -31,7 +32,31 @@ export function ScoringSystem({
   const [playerScores, setPlayerScores] = useState<Record<number, number>>({});
   const [teamScores, setTeamScores] = useState<Record<number, number>>({});
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
+  const [feedback, setFeedback] = useState<
+    Record<string, { message: string; type: "success" | "error" }>
+  >({});
   const { connected } = useWebSocket();
+
+  // Clear feedback messages after a delay
+  useEffect(() => {
+    const timeouts: NodeJS.Timeout[] = [];
+
+    Object.keys(feedback).forEach((key) => {
+      const timeout = setTimeout(() => {
+        setFeedback((prev) => {
+          const newFeedback = { ...prev };
+          delete newFeedback[key];
+          return newFeedback;
+        });
+      }, 3000);
+
+      timeouts.push(timeout);
+    });
+
+    return () => {
+      timeouts.forEach((timeout) => clearTimeout(timeout));
+    };
+  }, [feedback]);
 
   const handlePlayerScoreChange = (playerId: number, score: string) => {
     const numericScore = parseFloat(score);
@@ -51,7 +76,9 @@ export function ScoringSystem({
     const score = playerScores[playerId];
     if (!score) return;
 
-    setSubmitting((prev) => ({ ...prev, [`player-${playerId}`]: true }));
+    const feedbackKey = `player-${playerId}`;
+    setSubmitting((prev) => ({ ...prev, [feedbackKey]: true }));
+    setFeedback({});
 
     try {
       if (connected) {
@@ -61,10 +88,24 @@ export function ScoringSystem({
       await onUpdateScore(playerId, gameId, score);
 
       setPlayerScores((prev) => ({ ...prev, [playerId]: 0 }));
+      setFeedback((prev) => ({
+        ...prev,
+        [feedbackKey]: {
+          message: `Added ${score} points successfully!`,
+          type: "success",
+        },
+      }));
     } catch (error) {
       console.error("Failed to update score:", error);
+      setFeedback((prev) => ({
+        ...prev,
+        [feedbackKey]: {
+          message: "Failed to update score",
+          type: "error",
+        },
+      }));
     } finally {
-      setSubmitting((prev) => ({ ...prev, [`player-${playerId}`]: false }));
+      setSubmitting((prev) => ({ ...prev, [feedbackKey]: false }));
     }
   };
 
@@ -72,7 +113,9 @@ export function ScoringSystem({
     const score = teamScores[teamId];
     if (!score) return;
 
-    setSubmitting((prev) => ({ ...prev, [`team-${teamId}`]: true }));
+    const feedbackKey = `team-${teamId}`;
+    setSubmitting((prev) => ({ ...prev, [feedbackKey]: true }));
+    setFeedback({});
 
     try {
       if (connected) {
@@ -82,10 +125,24 @@ export function ScoringSystem({
       await onUpdateTeamScore(teamId, gameId, score);
 
       setTeamScores((prev) => ({ ...prev, [teamId]: 0 }));
+      setFeedback((prev) => ({
+        ...prev,
+        [feedbackKey]: {
+          message: `Added ${score} points successfully!`,
+          type: "success",
+        },
+      }));
     } catch (error) {
       console.error("Failed to update team score:", error);
+      setFeedback((prev) => ({
+        ...prev,
+        [feedbackKey]: {
+          message: "Failed to update score",
+          type: "error",
+        },
+      }));
     } finally {
-      setSubmitting((prev) => ({ ...prev, [`team-${teamId}`]: false }));
+      setSubmitting((prev) => ({ ...prev, [feedbackKey]: false }));
     }
   };
 
@@ -97,7 +154,11 @@ export function ScoringSystem({
     const submittingKey = isTeam
       ? `team-${entityId}-quick`
       : `player-${entityId}-quick`;
+
+    const feedbackKey = isTeam ? `team-${entityId}` : `player-${entityId}`;
+
     setSubmitting((prev) => ({ ...prev, [submittingKey]: true }));
+    setFeedback({});
 
     try {
       if (connected) {
@@ -113,11 +174,26 @@ export function ScoringSystem({
       } else {
         await onUpdateScore(entityId, gameId, points);
       }
+
+      setFeedback((prev) => ({
+        ...prev,
+        [feedbackKey]: {
+          message: `Added ${points} points successfully!`,
+          type: "success",
+        },
+      }));
     } catch (error) {
       console.error(
         `Failed to update ${isTeam ? "team" : "player"} score:`,
         error
       );
+      setFeedback((prev) => ({
+        ...prev,
+        [feedbackKey]: {
+          message: "Failed to update score",
+          type: "error",
+        },
+      }));
     } finally {
       setSubmitting((prev) => ({ ...prev, [submittingKey]: false }));
     }
@@ -135,7 +211,23 @@ export function ScoringSystem({
               key={team.id}
               className="border rounded-lg p-4 hover:bg-gray-50"
             >
-              <h4 className="font-medium text-gray-900 mb-2">{team.name}</h4>
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-medium text-gray-900">{team.name}</h4>
+                <Badge variant="info">Current: {team.score || 0} points</Badge>
+              </div>
+
+              {feedback[`team-${team.id}`] && (
+                <div
+                  className={`p-2 rounded text-sm mb-2 ${
+                    feedback[`team-${team.id}`].type === "success"
+                      ? "bg-green-50 text-green-600"
+                      : "bg-red-50 text-red-600"
+                  }`}
+                >
+                  {feedback[`team-${team.id}`].message}
+                </div>
+              )}
+
               <div className="flex items-center space-x-2 mb-3">
                 <Input
                   type="number"
@@ -194,7 +286,25 @@ export function ScoringSystem({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {players.map((player) => (
             <div key={player.id} className="border rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">{player.name}</h4>
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="font-medium text-gray-900">{player.name}</h4>
+                <Badge variant="info">
+                  Current: {player.score || 0} points
+                </Badge>
+              </div>
+
+              {feedback[`player-${player.id}`] && (
+                <div
+                  className={`p-2 rounded text-sm mb-2 ${
+                    feedback[`player-${player.id}`].type === "success"
+                      ? "bg-green-50 text-green-600"
+                      : "bg-red-50 text-red-600"
+                  }`}
+                >
+                  {feedback[`player-${player.id}`].message}
+                </div>
+              )}
+
               <div className="flex items-center space-x-2 mb-3">
                 <Input
                   type="number"

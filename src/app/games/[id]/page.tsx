@@ -105,6 +105,10 @@ export default function GamePage() {
       timestamp: string;
     }>
   >([]);
+  const [stateUpdateSuccess, setStateUpdateSuccess] = useState<string | null>(
+    null
+  );
+  const [stateUpdateError, setStateUpdateError] = useState<string | null>(null);
 
   const {
     games,
@@ -268,9 +272,12 @@ export default function GamePage() {
   };
 
   const handleGameStateChange = async (newState: string) => {
-    if (!gameId || !isHost) return;
+    if (!gameId || !isHost || !newState) return;
 
     try {
+      setStateUpdateSuccess(null);
+      setStateUpdateError(null);
+
       await api.put(`/games/${gameId}/state`, {
         state: newState,
       });
@@ -278,10 +285,21 @@ export default function GamePage() {
       // Refresh game data
       await fetchGames();
 
-      // Show feedback (TODO: add a toast notification system)
-      console.log(`Game state changed to ${newState}`);
+      // Show feedback
+      setStateUpdateSuccess(`Game state changed to ${newState}`);
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setStateUpdateSuccess(null);
+      }, 3000);
     } catch (error) {
       console.error("Failed to update game state:", error);
+      setStateUpdateError("Failed to update game state. Please try again.");
+
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setStateUpdateError(null);
+      }, 5000);
     }
   };
 
@@ -326,10 +344,11 @@ export default function GamePage() {
       confirm("Are you sure you want to end this game?")
     ) {
       try {
-        await api.delete(`/games/${gameId}/players/${hostId}`);
+        // Use completeGame function instead of deleting player
+        await completeGame(gameId);
         await fetchGames();
       } catch (error) {
-        console.error("Failed to leave game:", error);
+        console.error("Failed to end game:", error);
       }
     }
   };
@@ -930,6 +949,15 @@ export default function GamePage() {
               </div>
             </div>
           </div>
+
+          {stateUpdateSuccess && (
+            <div className="text-center text-green-500">
+              {stateUpdateSuccess}
+            </div>
+          )}
+          {stateUpdateError && (
+            <div className="text-center text-red-500">{stateUpdateError}</div>
+          )}
 
           {canJoin && <Button onClick={handleJoinGame}>Join Game</Button>}
 

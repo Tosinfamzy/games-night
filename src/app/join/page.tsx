@@ -7,6 +7,13 @@ import { Button } from "@/components/ui";
 import Link from "next/link";
 import { Session } from "@/types/session";
 import { api } from "@/services/api";
+import axios, { AxiosError } from "axios";
+
+// Define the API error response structure
+interface ApiErrorResponse {
+  message?: string;
+  error?: string;
+}
 
 function JoinPageContent() {
   const router = useRouter();
@@ -44,15 +51,40 @@ function JoinPageContent() {
       setError(null);
 
       const lookupResponse = await api.post("/sessions/lookup", {
-        joinCode: code,
+        joinCode: code.trim(),
       });
 
-      if (lookupResponse.data && lookupResponse.data.id === sessionId) {
+      // Make sure we're comparing the session IDs correctly (as numbers)
+      const responseId = parseInt(lookupResponse.data?.id);
+      const requestedId = parseInt(sessionId);
+
+      if (lookupResponse.data && responseId === requestedId) {
+        if (!lookupResponse.data.isActive) {
+          setError("This session is no longer active.");
+          return;
+        }
         setSessionData(lookupResponse.data);
+      } else {
+        setError(
+          "Session information doesn't match. Please check the QR code and try again."
+        );
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error looking up session:", err);
-      setError("Unable to verify session. Please enter your details manually.");
+      let errorMessage =
+        "Unable to verify session. Please enter your details manually.";
+
+      if (axios.isAxiosError(err)) {
+        const axiosError = err as AxiosError<ApiErrorResponse>;
+        errorMessage =
+          axiosError.response?.data?.message ||
+          axiosError.response?.data?.error ||
+          errorMessage;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -65,6 +97,7 @@ function JoinPageContent() {
     setJoinSuccess(true);
 
     localStorage.setItem("playerId", newPlayerId.toString());
+    localStorage.setItem("sessionId", session.id.toString());
 
     setTimeout(() => {
       router.push(`/players/${newPlayerId}`);

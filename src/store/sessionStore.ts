@@ -304,7 +304,29 @@ const createSessionStore = () => {
               gameId,
               points,
             });
-            set({ isLoading: false });
+
+            // Update local state to reflect the change immediately
+            set((state) => ({
+              sessions: state.sessions.map((session) => ({
+                ...session,
+                players: session.players.map((player) =>
+                  player.id === playerId
+                    ? { ...player, score: (player.score || 0) + points }
+                    : player
+                ),
+              })),
+              currentSession: state.currentSession
+                ? {
+                    ...state.currentSession,
+                    players: state.currentSession.players.map((player) =>
+                      player.id === playerId
+                        ? { ...player, score: (player.score || 0) + points }
+                        : player
+                    ),
+                  }
+                : null,
+              isLoading: false,
+            }));
           } catch (error) {
             const errorMessage =
               error instanceof Error

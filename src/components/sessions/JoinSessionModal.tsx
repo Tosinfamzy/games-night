@@ -4,6 +4,7 @@ import { Input } from "@/components/ui";
 import { Button } from "@/components/ui";
 import { api } from "@/services/api";
 import { Session } from "@/types/session";
+import axios, { AxiosError } from "axios";
 
 interface SessionInfo {
   id: number;
@@ -11,6 +12,12 @@ interface SessionInfo {
   playerCount: number;
   isActive: boolean;
   joinCode: string;
+}
+
+// Define the API error response structure
+interface ApiErrorResponse {
+  message?: string;
+  error?: string;
 }
 
 interface JoinSessionModalProps {
@@ -73,14 +80,29 @@ export function JoinSessionModal({
         joinCode: code.trim(),
       });
 
+      if (!response.data || !response.data.isActive) {
+        setError("This session is no longer active.");
+        return;
+      }
+
       setSessionInfo(response.data);
       setStep("name");
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "No active session found with this code"
-      );
+    } catch (err: unknown) {
+      // Extract specific error message if available
+      let errorMessage = "No active session found with this code";
+
+      if (axios.isAxiosError(err)) {
+        const axiosError = err as AxiosError<ApiErrorResponse>;
+        errorMessage =
+          axiosError.response?.data?.message ||
+          axiosError.response?.data?.error ||
+          axiosError.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+      console.error("Session lookup error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -91,16 +113,47 @@ export function JoinSessionModal({
     await handleCodeCheck(joinCode);
   };
 
+  const validatePlayerName = (
+    name: string
+  ): { valid: boolean; message?: string } => {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return { valid: false, message: "Name cannot be empty" };
+    }
+    if (trimmedName.length < 2) {
+      return { valid: false, message: "Name must be at least 2 characters" };
+    }
+    if (trimmedName.length > 20) {
+      return { valid: false, message: "Name must be 20 characters or less" };
+    }
+    if (!/^[a-zA-Z0-9\s._-]+$/.test(trimmedName)) {
+      return {
+        valid: false,
+        message:
+          "Name can only contain letters, numbers, spaces, and simple punctuation",
+      };
+    }
+    return { valid: true };
+  };
+
   const handlePlayerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!playerName.trim() || !joinCode.trim() || !sessionInfo) return;
+    if (!sessionInfo) return;
+
+    const trimmedName = playerName.trim();
+    const nameValidation = validatePlayerName(trimmedName);
+
+    if (!nameValidation.valid) {
+      setError(nameValidation.message || "Invalid name");
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
 
     try {
       const playerResponse = await api.post("/players", {
-        name: playerName.trim(),
+        name: trimmedName,
         type: "participant",
         sessionId: sessionInfo.id.toString(),
       });
@@ -118,12 +171,44 @@ export function JoinSessionModal({
       setPlayerName("");
       setSessionInfo(null);
       setStep(fromQrCode ? "name" : "code");
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to join session. Please try again."
-      );
+    } catch (err: unknown) {
+      // Extract detailed error message
+      let errorMessage = "Failed to join session. Please try again.";
+
+      if (axios.isAxiosError(err)) {
+        const axiosError = err as AxiosError<ApiErrorResponse>;
+
+        if (axiosError.response?.data) {
+          errorMessage =
+            axiosError.response.data.message ||
+            axiosError.response.data.error ||
+            errorMessage;
+
+          // Special handling for common errors
+          if (axiosError.response.status === 400) {
+            const errorData = axiosError.response.data;
+            const errorDataStr = typeof errorData === "string" ? errorData : "";
+            const errorDataMsg = errorData?.message || "";
+            const errorDataErr = errorData?.error || "";
+
+            if (
+              errorDataMsg.includes("name") ||
+              errorDataErr.includes("name") ||
+              errorDataStr.includes("name")
+            ) {
+              errorMessage =
+                "This name is already taken in the session. Please try another name.";
+            }
+          }
+        } else if (axiosError.message) {
+          errorMessage = axiosError.message;
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+      console.error("Join session error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -175,7 +260,11 @@ export function JoinSessionModal({
                 required
               />
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+                {error}
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
@@ -218,7 +307,11 @@ export function JoinSessionModal({
                 autoFocus
               />
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+                {error}
+              </div>
+            )}
           </div>
 
           <div className="flex justify-between gap-3 pt-4 border-t">
