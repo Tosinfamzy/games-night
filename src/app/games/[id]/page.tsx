@@ -554,13 +554,23 @@ export default function GamePage() {
     <div className="container mx-auto px-4 py-8 text-gray-900 bg-white min-h-screen">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
-          <Button
-            variant="outline"
-            onClick={() => router.back()}
-            className="mb-4"
-          >
-            Back to Games
-          </Button>
+          {currentSession ? (
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/sessions/${currentSession.id}`)}
+              className="mb-4"
+            >
+              Back to Session
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => router.push("/games")}
+              className="mb-4"
+            >
+              Back to Games
+            </Button>
+          )}
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-4xl font-bold text-gray-900">
