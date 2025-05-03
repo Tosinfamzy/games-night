@@ -32,13 +32,11 @@ export function RealtimeScoreUpdates({
   const [latestUpdate, setLatestUpdate] = useState<ScoreUpdate | null>(null);
   const { connected, connectionStatus } = useWebSocket();
 
-  // Create a unique ID for score updates
   const createUniqueId = () => {
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
   };
 
   useEffect(() => {
-    // Handler for player score updates
     const handlePlayerScoreUpdate = (data: {
       playerId: number;
       gameId: number;
@@ -66,7 +64,6 @@ export function RealtimeScoreUpdates({
       });
     };
 
-    // Handler for team score updates
     const handleTeamScoreUpdate = (data: {
       teamId: number;
       gameId: number;
@@ -94,27 +91,22 @@ export function RealtimeScoreUpdates({
       });
     };
 
-    // Subscribe to game with score event handlers
     wsService.subscribeToGame(gameId.toString(), {
       onPlayerScoreEvent: handlePlayerScoreUpdate,
     });
 
-    // Listen for specific score update events
     wsService.onPlayerScoreUpdate(handlePlayerScoreUpdate);
     wsService.onTeamScoreUpdate(handleTeamScoreUpdate);
 
-    // If sessionId is provided, also subscribe to session score updates
     if (sessionId) {
       wsService.subscribeToSession(sessionId.toString(), {
         onScoreUpdate: (data) => {
-          // Filter for updates relevant to our game
           const relevantScores = data.scores.filter(
             () => data.gameId.toString() === gameId.toString()
           );
 
           if (relevantScores.length === 0) return;
 
-          // Process each score update
           relevantScores.forEach((score) => {
             handlePlayerScoreUpdate({
               playerId: parseInt(score.playerId),
@@ -127,10 +119,8 @@ export function RealtimeScoreUpdates({
       });
     }
 
-    // Clear any existing notifications on mount
     setLatestUpdate(null);
 
-    // Clean up subscriptions on unmount
     return () => {
       wsService.unsubscribeFromGame(gameId.toString());
       if (sessionId) {
@@ -139,10 +129,8 @@ export function RealtimeScoreUpdates({
     };
   }, [gameId, sessionId, maxUpdates]);
 
-  // Display notification when new score update comes in
   useEffect(() => {
     if (latestUpdate) {
-      // Automatically clear the notification after 3 seconds
       const timer = setTimeout(() => {
         setLatestUpdate(null);
       }, 3000);

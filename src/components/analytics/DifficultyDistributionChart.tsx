@@ -11,7 +11,6 @@ import {
 import { Card } from "@/components/ui/Card";
 import { GameAnalytics } from "@/types/game";
 
-// Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface DifficultyDistributionChartProps {

@@ -14,7 +14,6 @@ import {
 import { Card } from "@/components/ui/Card";
 import { GameAnalytics } from "@/types/game";
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -101,7 +100,6 @@ export function PlayerPerformanceChart({
         },
         ticks: {
           callback: function (tickValue: number | string) {
-            // We can safely convert to number since we know we're working with numeric values
             const value =
               typeof tickValue === "string" ? parseFloat(tickValue) : tickValue;
             return value + "%";

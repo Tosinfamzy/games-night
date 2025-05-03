@@ -305,7 +305,6 @@ const createSessionStore = () => {
               points,
             });
 
-            // Update local state to reflect the change immediately
             set((state) => ({
               sessions: state.sessions.map((session) => ({
                 ...session,
@@ -353,7 +352,6 @@ const createSessionStore = () => {
               points,
             });
 
-            // Still update local state to reflect the change immediately
             set((state) => ({
               sessions: state.sessions.map((session) => ({
                 ...session,

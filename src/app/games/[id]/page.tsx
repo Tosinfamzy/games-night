@@ -282,13 +282,10 @@ export default function GamePage() {
         state: newState,
       });
 
-      // Refresh game data
       await fetchGames();
 
-      // Show feedback
       setStateUpdateSuccess(`Game state changed to ${newState}`);
 
-      // Clear success message after 3 seconds
       setTimeout(() => {
         setStateUpdateSuccess(null);
       }, 3000);
@@ -296,7 +293,6 @@ export default function GamePage() {
       console.error("Failed to update game state:", error);
       setStateUpdateError("Failed to update game state. Please try again.");
 
-      // Clear error message after 5 seconds
       setTimeout(() => {
         setStateUpdateError(null);
       }, 5000);
@@ -344,7 +340,6 @@ export default function GamePage() {
       confirm("Are you sure you want to end this game?")
     ) {
       try {
-        // Use completeGame function instead of deleting player
         await completeGame(gameId);
         await fetchGames();
       } catch (error) {
@@ -425,7 +420,6 @@ export default function GamePage() {
         playerId: selectedPlayerId,
       } as AddPlayerDto);
 
-      // Refetch both game data and players
       await Promise.all([
         fetchGames(),
         api
@@ -449,11 +443,9 @@ export default function GamePage() {
   const onPlayerAdded = () => {
     setIsAddingPlayer(false);
     setAddPlayerError(null);
-    // Refresh game players list
     fetchGamePlayers();
   };
 
-  // Get available players (players in session who aren't in the game)
   const availablePlayers =
     currentSession?.players?.filter(
       (player) =>
@@ -462,7 +454,6 @@ export default function GamePage() {
         )
     ) || [];
 
-  // Add a null check before accessing currentGame properties
   if (!currentGame) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -875,7 +866,6 @@ export default function GamePage() {
                                 ...newTeamScore,
                                 [team.id]: 0,
                               });
-                              // Refresh session to update team scores
                               await fetchSession(activeSession.id.toString());
                             } catch (error) {
                               console.error(

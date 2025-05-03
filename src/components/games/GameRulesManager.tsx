@@ -19,7 +19,6 @@ export function GameRulesManager({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch game rules when game changes
   useEffect(() => {
     if (!game?.id) return;
 
@@ -27,19 +26,15 @@ export function GameRulesManager({
       setLoading(true);
       setError(null);
       try {
-        // Get active rules for this game
         const response = await api.get(`/games/${game.id}/rules`);
         if (Array.isArray(response.data)) {
-          // If response data is already an array of rules
           setRules(response.data);
         } else if (response.data?.rules && Array.isArray(response.data.rules)) {
-          // If rules are nested in a 'rules' property
           setRules(response.data.rules);
         } else if (
           response.data?.rulesContent &&
           Array.isArray(response.data.rulesContent)
         ) {
-          // If rules are nested in a 'rulesContent' property as an array
           setRules(response.data.rulesContent);
         } else {
           console.error("Unexpected response format:", response.data);
@@ -66,7 +61,6 @@ export function GameRulesManager({
     setRules(updatedRules);
 
     try {
-      // Update the rule on the server
       await api.put(`/games/rules/${ruleId}`, {
         isDefaultEnabled: updatedRules.find((r) => r.id === ruleId)
           ?.isDefaultEnabled,
@@ -75,7 +69,6 @@ export function GameRulesManager({
       if (onRulesChanged) onRulesChanged();
     } catch (err) {
       console.error("Failed to update rule:", err);
-      // Revert the change if it failed
       setRules(rules);
     }
   };

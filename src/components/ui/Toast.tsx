@@ -39,7 +39,7 @@ export function Toast({
 
     const timer = setTimeout(() => {
       setIsLeaving(true);
-      setTimeout(onClose, 300); // Wait for animation to complete
+      setTimeout(onClose, 300);
     }, duration);
 
     return () => clearTimeout(timer);
@@ -77,7 +77,6 @@ export function Toast({
   );
 }
 
-// Toast context and provider for managing multiple toasts
 interface ToastContextType {
   showToast: (message: string, type: ToastType) => void;
 }

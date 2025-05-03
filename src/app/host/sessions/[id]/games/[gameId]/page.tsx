@@ -34,7 +34,6 @@ export default function GamePage() {
   useEffect(() => {
     if (games && games.length > 0) {
       const game = games.find((g) => g.id === gameId);
-      // Convert undefined to null when no game is found
       setCurrentGame(game || null);
     }
   }, [games, gameId]);
@@ -50,10 +49,8 @@ export default function GamePage() {
         state: newState,
       });
 
-      // Refresh game data
       await fetchGames();
 
-      // Show feedback (You might want to add a toast notification system)
       setStateUpdateSuccess(`Game state changed to ${newState}`);
       console.log(`Game state changed to ${newState}`);
     } catch (error) {

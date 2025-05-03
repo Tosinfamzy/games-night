@@ -27,7 +27,6 @@ export function CreateGameModal({
     maxPlayers: 8,
   });
 
-  // For handling rules
   const [gameRules, setGameRules] = useState<Rule[]>([]);
   const [showRulesForm, setShowRulesForm] = useState(false);
   const [newRule, setNewRule] = useState<CreateRuleDto>({
@@ -60,7 +59,6 @@ export function CreateGameModal({
   const handleTypeChange = (type: string) => {
     setNewGameData({ ...newGameData, type: type as GameType });
 
-    // Set default min/max players based on game type
     switch (type) {
       case "uno":
         setNewGameData((prev) => ({
