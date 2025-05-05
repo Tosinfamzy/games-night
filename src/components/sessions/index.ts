@@ -11,3 +11,4 @@ export { SessionManager } from "./SessionManager";
 export { SessionNavigation } from "./SessionNavigation";
 export { SessionQRCode } from "./SessionQRCode";
 export { TeamManager } from "./TeamManager";
+export { TeamChat } from "./TeamChat";

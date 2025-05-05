@@ -1589,10 +1589,151 @@
         "parameters": [],
         "responses": {
           "201": {
+            "description": "Team successfully created"
+          },
+          "400": {
+            "description": "Invalid session ID format"
+          }
+        },
+        "summary": "Create a new team",
+        "tags": ["teams"]
+      },
+      "get": {
+        "operationId": "TeamsController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
             "description": ""
           }
         },
-        "tags": ["Teams"]
+        "summary": "Get all teams",
+        "tags": ["teams"]
+      }
+    },
+    "/teams/{id}": {
+      "get": {
+        "operationId": "TeamsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get team by ID",
+        "tags": ["teams"]
+      },
+      "delete": {
+        "operationId": "TeamsController_deleteTeam",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Delete a team",
+        "tags": ["teams"]
+      }
+    },
+    "/teams/session/{sessionId}": {
+      "get": {
+        "operationId": "TeamsController_findBySessionId",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get teams by session ID",
+        "tags": ["teams"]
+      }
+    },
+    "/teams/{id}/players": {
+      "post": {
+        "operationId": "TeamsController_addPlayerToTeam",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPlayerToTeamDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Add a player to a team",
+        "tags": ["teams"]
+      }
+    },
+    "/teams/{id}/players/{playerId}": {
+      "delete": {
+        "operationId": "TeamsController_removePlayerFromTeam",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "playerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Remove a player from a team",
+        "tags": ["teams"]
       }
     },
     "/scoring/player": {
@@ -2634,6 +2775,17 @@
           }
         },
         "required": ["name"]
+      },
+      "AddPlayerToTeamDto": {
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "number",
+            "description": "Player ID to add to the team",
+            "example": 1
+          }
+        },
+        "required": ["playerId"]
       },
       "PlayerScoreDto": {
         "type": "object",

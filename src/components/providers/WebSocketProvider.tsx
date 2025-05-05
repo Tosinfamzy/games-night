@@ -15,12 +15,22 @@ interface WebSocketContextType {
   connected: boolean;
   connectionStatus: ConnectionStatus;
   reconnect: () => void;
+  joinTeam: (teamId: number, playerId: number) => Promise<boolean>;
+  leaveTeam: (teamId: number) => void;
+  sendTeamMessage: (
+    teamId: number,
+    playerId: number,
+    message: string
+  ) => boolean;
 }
 
 const WebSocketContext = createContext<WebSocketContextType>({
   connected: false,
   connectionStatus: "disconnected",
   reconnect: () => {},
+  joinTeam: () => Promise.resolve(false),
+  leaveTeam: () => {},
+  sendTeamMessage: () => false,
 });
 
 export const useWebSocket = () => useContext(WebSocketContext);
@@ -63,10 +73,56 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     setTimeout(() => wsService.connect(), 500);
   };
 
+  const joinTeam = async (
+    teamId: number,
+    playerId: number
+  ): Promise<boolean> => {
+    if (!connected) {
+      console.error("Cannot join team: not connected to WebSocket server");
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      wsService.joinTeam(teamId, playerId, (response) => {
+        resolve(response.success);
+        if (!response.success) {
+          console.error(`Failed to join team: ${response.message}`);
+        }
+      });
+    });
+  };
+
+  const leaveTeam = (teamId: number) => {
+    if (!connected) {
+      console.error("Cannot leave team: not connected to WebSocket server");
+      return;
+    }
+
+    wsService.leaveTeam(teamId);
+  };
+
+  const sendTeamMessage = (
+    teamId: number,
+    playerId: number,
+    message: string
+  ): boolean => {
+    if (!connected) {
+      console.error(
+        "Cannot send team message: not connected to WebSocket server"
+      );
+      return false;
+    }
+
+    return wsService.sendTeamMessage(teamId, playerId, message);
+  };
+
   const contextValue = {
     connected,
     connectionStatus,
     reconnect,
+    joinTeam,
+    leaveTeam,
+    sendTeamMessage,
   };
 
   return (

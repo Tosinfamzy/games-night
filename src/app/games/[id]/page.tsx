@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button, Badge } from "@/components/ui";
 import { useGameStore } from "@/store/gameStore";
@@ -193,7 +193,7 @@ export default function GamePage() {
     subscribeToScores();
   }, [currentGame?.sessions]);
 
-  const fetchGamePlayers = async () => {
+  const fetchGamePlayers = useCallback(async () => {
     if (!gameId) return;
 
     try {
@@ -204,11 +204,11 @@ export default function GamePage() {
     } catch (error) {
       console.error("Failed to fetch game players:", error);
     }
-  };
+  }, [gameId]);
 
   useEffect(() => {
     fetchGamePlayers();
-  }, [gameId]);
+  }, [fetchGamePlayers, gameId]);
 
   useEffect(() => {
     async function fetchScoreHistory() {

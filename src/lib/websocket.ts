@@ -65,10 +65,36 @@ interface TeamScoreEvent {
   teamName?: string;
 }
 
+interface TeamMessageEvent {
+  teamId: number;
+  playerId: number;
+  playerName: string;
+  message: string;
+  timestamp: string;
+}
+
+interface TeamPlayerEvent {
+  teamId: number;
+  playerId: number;
+  playerName: string;
+  action: "joined" | "left";
+  timestamp: string;
+}
+
+interface TeamResponse {
+  success: boolean;
+  message?: string;
+  data?: unknown;
+}
+
+type TeamResponseCallback = (response: TeamResponse) => void;
+
 interface StaticEventMap {
   connection_status: ConnectionStatusType;
   "player:score:update": PlayerScoreEvent;
   "team:score:update": TeamScoreEvent;
+  "team:message": TeamMessageEvent;
+  "team:player:update": TeamPlayerEvent;
 }
 
 interface SessionEventTypes {
@@ -76,6 +102,11 @@ interface SessionEventTypes {
   players: PlayerUpdate;
   teams: TeamUpdate;
   score: GameScoreUpdate;
+}
+
+interface TeamEventTypes {
+  message: TeamMessageEvent;
+  player: TeamPlayerEvent;
 }
 
 type EventHandler<T> = (data: T) => void;
@@ -91,6 +122,9 @@ class WebSocketService {
   private connectionListeners = new Set<EventHandler<ConnectionStatusType>>();
   private playerScoreListeners = new Set<EventHandler<PlayerScoreEvent>>();
   private teamScoreListeners = new Set<EventHandler<TeamScoreEvent>>();
+  private teamMessageListeners = new Set<EventHandler<TeamMessageEvent>>();
+  private teamPlayerListeners = new Set<EventHandler<TeamPlayerEvent>>();
+
   private gameEventListeners: Map<
     string,
     {
@@ -100,10 +134,18 @@ class WebSocketService {
       playerScore?: Set<EventHandler<PlayerScoreEvent>>;
     }
   > = new Map();
+
   private sessionEventListeners: Map<
     string,
     {
       [K in keyof SessionEventTypes]?: Set<EventHandler<SessionEventTypes[K]>>;
+    }
+  > = new Map();
+
+  private teamEventListeners: Map<
+    string,
+    {
+      [K in keyof TeamEventTypes]?: Set<EventHandler<TeamEventTypes[K]>>;
     }
   > = new Map();
 
@@ -163,6 +205,48 @@ class WebSocketService {
         this.connectionStatus = "error";
         this.notifyConnectionListeners(this.connectionStatus);
       });
+
+      // Team-related socket events
+      this.socket.on("team:message", (data: TeamMessageEvent) => {
+        console.log(`Team message received: Team ${data.teamId}`, data);
+        this.notifyTeamMessageListeners(data);
+
+        // Also notify team-specific listeners
+        const teamListeners = this.teamEventListeners.get(
+          data.teamId.toString()
+        );
+        if (teamListeners?.message) {
+          teamListeners.message.forEach((listener) => {
+            try {
+              listener(data);
+            } catch (error) {
+              console.error("Error in team message listener:", error);
+            }
+          });
+        }
+      });
+
+      this.socket.on("team:player:update", (data: TeamPlayerEvent) => {
+        console.log(
+          `Team player update: ${data.action} Team ${data.teamId}`,
+          data
+        );
+        this.notifyTeamPlayerListeners(data);
+
+        // Also notify team-specific listeners
+        const teamListeners = this.teamEventListeners.get(
+          data.teamId.toString()
+        );
+        if (teamListeners?.player) {
+          teamListeners.player.forEach((listener) => {
+            try {
+              listener(data);
+            } catch (error) {
+              console.error("Error in team player update listener:", error);
+            }
+          });
+        }
+      });
     } catch (error) {
       console.error("Failed to initialize WebSocket:", error);
       this.connectionStatus = "error";
@@ -217,6 +301,10 @@ class WebSocketService {
       this.playerScoreListeners.add(handler as EventHandler<PlayerScoreEvent>);
     } else if (event === "team:score:update") {
       this.teamScoreListeners.add(handler as EventHandler<TeamScoreEvent>);
+    } else if (event === "team:message") {
+      this.teamMessageListeners.add(handler as EventHandler<TeamMessageEvent>);
+    } else if (event === "team:player:update") {
+      this.teamPlayerListeners.add(handler as EventHandler<TeamPlayerEvent>);
     }
   }
 
@@ -234,6 +322,12 @@ class WebSocketService {
       );
     } else if (event === "team:score:update") {
       this.teamScoreListeners.delete(handler as EventHandler<TeamScoreEvent>);
+    } else if (event === "team:message") {
+      this.teamMessageListeners.delete(
+        handler as EventHandler<TeamMessageEvent>
+      );
+    } else if (event === "team:player:update") {
+      this.teamPlayerListeners.delete(handler as EventHandler<TeamPlayerEvent>);
     }
   }
 
@@ -263,6 +357,26 @@ class WebSocketService {
         listener(data);
       } catch (error) {
         console.error("Error in team score listener:", error);
+      }
+    });
+  }
+
+  private notifyTeamMessageListeners(data: TeamMessageEvent): void {
+    this.teamMessageListeners.forEach((listener) => {
+      try {
+        listener(data);
+      } catch (error) {
+        console.error("Error in team message listener:", error);
+      }
+    });
+  }
+
+  private notifyTeamPlayerListeners(data: TeamPlayerEvent): void {
+    this.teamPlayerListeners.forEach((listener) => {
+      try {
+        listener(data);
+      } catch (error) {
+        console.error("Error in team player update listener:", error);
       }
     });
   }
@@ -416,6 +530,135 @@ class WebSocketService {
     this.sessionEventListeners.delete(sessionId);
   }
 
+  // Team socket methods
+  joinTeam(
+    teamId: number,
+    playerId: number,
+    callback?: TeamResponseCallback
+  ): void {
+    if (!this.socket) {
+      console.error("Cannot join team: socket not initialized");
+      if (callback) {
+        callback({
+          success: false,
+          message: "Not connected to the server",
+        });
+      }
+      return;
+    }
+
+    console.log(`Joining team ${teamId} as player ${playerId}`);
+
+    this.socket.emit(
+      "joinTeam",
+      { teamId, playerId },
+      (response: TeamResponse) => {
+        if (response.success) {
+          // Set up team event listeners if this is the first time joining this team
+          if (!this.teamEventListeners.has(teamId.toString())) {
+            this.teamEventListeners.set(teamId.toString(), {});
+            console.log(`Joined team room: team_${teamId}`);
+          }
+        }
+
+        if (callback) {
+          callback(response);
+        }
+      }
+    );
+  }
+
+  leaveTeam(teamId: number): void {
+    if (!this.socket) return;
+
+    console.log(`Leaving team ${teamId}`);
+    this.socket.emit("leaveTeam", { teamId });
+
+    // Clean up team-specific event listeners
+    this.socket.off(`team:${teamId}:message`);
+    this.socket.off(`team:${teamId}:player`);
+
+    this.teamEventListeners.delete(teamId.toString());
+  }
+
+  subscribeToTeam(
+    teamId: number,
+    callbacks: {
+      onMessage?: EventHandler<TeamMessageEvent>;
+      onPlayerUpdate?: EventHandler<TeamPlayerEvent>;
+    }
+  ): void {
+    if (!this.socket) {
+      this.connect();
+      if (!this.socket) {
+        console.error("Failed to subscribe to team: socket not initialized");
+        return;
+      }
+    }
+
+    if (!this.teamEventListeners.has(teamId.toString())) {
+      this.teamEventListeners.set(teamId.toString(), {});
+    }
+
+    const teamListeners = this.teamEventListeners.get(teamId.toString())!;
+
+    if (callbacks.onMessage) {
+      if (!teamListeners.message) {
+        teamListeners.message = new Set();
+      }
+      teamListeners.message.add(callbacks.onMessage);
+      this.socket.on(`team:${teamId}:message`, callbacks.onMessage);
+    }
+
+    if (callbacks.onPlayerUpdate) {
+      if (!teamListeners.player) {
+        teamListeners.player = new Set();
+      }
+      teamListeners.player.add(callbacks.onPlayerUpdate);
+      this.socket.on(`team:${teamId}:player`, callbacks.onPlayerUpdate);
+    }
+  }
+
+  unsubscribeFromTeam(teamId: number): void {
+    if (!this.socket) return;
+
+    this.socket.off(`team:${teamId}:message`);
+    this.socket.off(`team:${teamId}:player`);
+
+    this.teamEventListeners.delete(teamId.toString());
+  }
+
+  sendTeamMessage(teamId: number, playerId: number, message: string): boolean {
+    if (!this.socket) {
+      console.error("Cannot send team message: socket not initialized");
+      return false;
+    }
+
+    console.log(
+      `Sending team message: Team ${teamId}, Player ${playerId}, Message: ${message.substring(
+        0,
+        20
+      )}${message.length > 20 ? "..." : ""}`
+    );
+
+    this.socket.emit(
+      "teamMessage",
+      {
+        teamId,
+        playerId,
+        message,
+        timestamp: new Date().toISOString(),
+      },
+      (response: TeamResponse) => {
+        if (!response.success) {
+          console.error(`Failed to send team message: ${response.message}`);
+        }
+      }
+    );
+
+    return true;
+  }
+
   updatePlayerScore(playerId: number, gameId: number, points: number): boolean {
     if (!this.socket) {
       console.error("Cannot update player score: socket not initialized");
@@ -466,6 +709,22 @@ class WebSocketService {
     }
     this.teamScoreListeners.add(callback);
     this.socket?.on("team:score:update", callback);
+  }
+
+  onTeamMessage(callback: EventHandler<TeamMessageEvent>): void {
+    if (!this.socket) {
+      this.connect();
+    }
+    this.teamMessageListeners.add(callback);
+    this.socket?.on("team:message", callback);
+  }
+
+  onTeamPlayerUpdate(callback: EventHandler<TeamPlayerEvent>): void {
+    if (!this.socket) {
+      this.connect();
+    }
+    this.teamPlayerListeners.add(callback);
+    this.socket?.on("team:player:update", callback);
   }
 }
 

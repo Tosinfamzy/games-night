@@ -10,6 +10,7 @@ import { useGameStore } from "@/store/gameStore";
 import { BasePlayer } from "@/types/session";
 import { Game } from "@/types/game";
 import { RealtimeScoreUpdates } from "@/components/sessions/RealtimeScoreUpdates";
+import { TeamChat } from "@/components/sessions/TeamChat";
 import Link from "next/link";
 
 interface PlayerDetails {
@@ -239,6 +240,17 @@ export default function PlayerPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Team Chat */}
+        {player.team && (
+          <div className="mb-8">
+            <TeamChat
+              teamId={player.team.id}
+              playerId={player.id}
+              playerName={player.name}
+            />
+          </div>
         )}
 
         {/* Live Score Updates */}
