@@ -196,10 +196,11 @@ const createSessionStore = () => {
 
           set({ isLoading: true, error: null });
           try {
-            const response = await api.post(`/sessions/${sessionId}/teams`, {
-              name: teamName,
-              hostId: Number(hostId),
-            });
+            const response = await api.post(
+              `/sessions/${sessionId}/teams`,
+              { name: teamName },
+              { params: { hostId: Number(hostId) } }
+            );
             const session = toBaseSession(response.data);
             const team = session.teams.find(
               (t: BaseTeam) => t.name === teamName
@@ -432,7 +433,8 @@ const createSessionStore = () => {
           try {
             const response = await api.post(
               `/sessions/${sessionId}/teams/random`,
-              { ...data, hostId: Number(hostId) }
+              data.numberOfTeams ? { numberOfTeams: data.numberOfTeams } : {},
+              { params: { hostId: Number(hostId) } }
             );
             const session = toBaseSession(response.data);
             set({ currentSession: session, isLoading: false });
@@ -465,7 +467,8 @@ const createSessionStore = () => {
           try {
             const response = await api.post(
               `/sessions/${sessionId}/teams/custom`,
-              { ...data, hostId: Number(hostId) }
+              { teams: data.teams },
+              { params: { hostId: Number(hostId) } }
             );
             const session = toBaseSession(response.data);
             set({ currentSession: session, isLoading: false });
