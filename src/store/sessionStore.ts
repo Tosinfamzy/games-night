@@ -196,11 +196,10 @@ const createSessionStore = () => {
 
           set({ isLoading: true, error: null });
           try {
-            const response = await api.post(
-              `/sessions/${sessionId}/teams`,
-              { name: teamName },
-              { params: { hostId } }
-            );
+            const response = await api.post(`/sessions/${sessionId}/teams`, {
+              name: teamName,
+              hostId: Number(hostId),
+            });
             const session = toBaseSession(response.data);
             const team = session.teams.find(
               (t: BaseTeam) => t.name === teamName
@@ -233,7 +232,7 @@ const createSessionStore = () => {
           try {
             const response = await api.post(`/sessions/${sessionId}/players`, {
               ...data,
-              hostId,
+              hostId: Number(hostId),
             });
             const session = toBaseSession(response.data);
             set({ currentSession: session, isLoading: false });
@@ -269,7 +268,7 @@ const createSessionStore = () => {
               `/sessions/${sessionId}/teams/${teamId}`,
               {
                 ...data,
-                hostId,
+                hostId: Number(hostId),
               }
             );
             const session = toBaseSession(response.data);
@@ -396,7 +395,7 @@ const createSessionStore = () => {
 
           set({ isLoading: true, error: null });
           try {
-            await api.post(`/sessions/${id}/end`, { hostId });
+            await api.post(`/sessions/${id}/end`, { hostId: Number(hostId) });
             set((state) => ({
               sessions: state.sessions.map((s) =>
                 s.id === Number(id) ? { ...s, isActive: false } : s
@@ -433,8 +432,7 @@ const createSessionStore = () => {
           try {
             const response = await api.post(
               `/sessions/${sessionId}/teams/random`,
-              { ...data },
-              { params: { hostId } }
+              { ...data, hostId: Number(hostId) }
             );
             const session = toBaseSession(response.data);
             set({ currentSession: session, isLoading: false });
@@ -467,8 +465,7 @@ const createSessionStore = () => {
           try {
             const response = await api.post(
               `/sessions/${sessionId}/teams/custom`,
-              { ...data },
-              { params: { hostId } }
+              { ...data, hostId: Number(hostId) }
             );
             const session = toBaseSession(response.data);
             set({ currentSession: session, isLoading: false });
