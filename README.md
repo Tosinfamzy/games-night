@@ -9,6 +9,7 @@ A real-time interactive platform for organizing and managing game nights with fr
 - **Real-time Updates**: Live scoring, leaderboards, and game state updates
 - **Game Analytics**: Track performance, strategies, and statistics across games
 - **Team Formation**: Create random or custom teams for competitive play
+- **Team Chat**: Real-time team communication through WebSockets for strategy discussions
 - **QR Code Joining**: Allow players to join sessions via QR codes
 - **Mobile-friendly Interface**: Play and participate from any device
 
@@ -44,8 +45,10 @@ The application will be available at [http://localhost:5173](http://localhost:51
   - `/analytics`: Analytics dashboards and charts
   - `/games`: Game-related components
   - `/sessions`: Session management components
+    - `TeamChat.tsx`: Team-specific real-time chat component
   - `/ui`: UI components like buttons, modals, etc.
 - `/src/lib`: Utility functions, hooks, and schemas
+  - `websocket.ts`: WebSocket service for real-time communication
 - `/src/services`: API service functions
 - `/src/store`: Zustand state management
 - `/src/types`: TypeScript type definitions
@@ -57,8 +60,22 @@ The application communicates with a backend service that provides the following 
 - **Games**: Create, manage, and configure games
 - **Sessions**: Create and manage game night sessions
 - **Players**: Add and manage players in sessions
-- **Teams**: Create and organize teams
+- **Teams**: Create and organize teams with real-time chat capabilities
 - **Scoring**: Track points and manage leaderboards
 - **Analytics**: View game statistics and player performance
 
 For detailed API documentation, see `src/lib/schemas/api.schema.json` which contains the OpenAPI specification.
+
+## Socket Implementation
+
+The application uses Socket.io for real-time communication with structured socket rooms:
+
+- **Session Rooms** (`session_${sessionId}`): For session-wide communications
+- **Team Rooms** (`team_${teamId}`): For team-specific communications
+
+Players join both session rooms and their respective team rooms when applicable, enabling:
+
+- Real-time score updates
+- Team chat messages
+- Notifications when players join or leave teams
+- Game state changes
