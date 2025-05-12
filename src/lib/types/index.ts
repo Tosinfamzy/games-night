@@ -59,7 +59,7 @@ export interface Session {
   id: number;
   sessionName: string;
   isActive: boolean; // true = IN_PROGRESS, false = COMPLETED
-  status?: string;   // "active" or "completed"
+  status?: string; // "active" or "completed"
   games: Game[];
   players: Player[];
   startTime?: string;

@@ -27,7 +27,10 @@ export function toBaseSession(session: Session): BaseSession {
  * @param state The session state
  * @returns Object with isActive and status properties
  */
-export function sessionStateToStatus(state: SessionState): { isActive: boolean; status: SessionStatus } {
+export function sessionStateToStatus(state: SessionState): {
+  isActive: boolean;
+  status: SessionStatus;
+} {
   switch (state) {
     case "IN_PROGRESS":
       return { isActive: true, status: "active" };

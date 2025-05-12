@@ -117,7 +117,11 @@ export default function SessionPage() {
       return;
     }
 
-    if (confirm("Are you sure you want to complete this session? Once completed, it cannot be reactivated and no new players will be able to join.")) {
+    if (
+      confirm(
+        "Are you sure you want to complete this session? Once completed, it cannot be reactivated and no new players will be able to join."
+      )
+    ) {
       try {
         await endSession(sessionId);
         router.push("/sessions");

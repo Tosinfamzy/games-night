@@ -401,17 +401,25 @@ const createSessionStore = () => {
             await api.post(`/sessions/${id}/end`, { hostId: Number(hostId) });
             set((state) => ({
               sessions: state.sessions.map((s) =>
-                s.id === Number(id) ? { ...s, isActive: false, status: "completed" } : s
+                s.id === Number(id)
+                  ? { ...s, isActive: false, status: "completed" }
+                  : s
               ),
               currentSession:
                 state.currentSession?.id === Number(id)
-                  ? { ...state.currentSession, isActive: false, status: "completed" }
+                  ? {
+                      ...state.currentSession,
+                      isActive: false,
+                      status: "completed",
+                    }
                   : state.currentSession,
               isLoading: false,
             }));
           } catch (error) {
             const errorMessage =
-              error instanceof Error ? error.message : "Failed to complete session";
+              error instanceof Error
+                ? error.message
+                : "Failed to complete session";
             set({
               error: errorMessage,
               isLoading: false,

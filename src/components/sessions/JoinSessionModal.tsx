@@ -11,7 +11,7 @@ interface SessionInfo {
   sessionName: string;
   playerCount: number;
   isActive: boolean; // true = IN_PROGRESS, false = COMPLETED
-  status?: string;   // "active" or "completed"
+  status?: string; // "active" or "completed"
   joinCode: string;
 }
 
