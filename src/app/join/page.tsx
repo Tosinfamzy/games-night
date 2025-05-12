@@ -54,17 +54,30 @@ function JoinPageContent() {
         joinCode: code.trim(),
       });
 
-      // Make sure we're comparing the session IDs correctly (as numbers)
-      const responseId = parseInt(lookupResponse.data?.id);
-      const requestedId = parseInt(sessionId);
+      // Compare session IDs as strings to avoid issues with parsing
+      const responseId = lookupResponse.data?.id?.toString();
+      const requestedId = sessionId?.toString();
 
       if (lookupResponse.data && responseId === requestedId) {
         if (!lookupResponse.data.isActive) {
-          setError("This session is no longer active.");
+          console.log("Session active status:", lookupResponse.data.isActive);
+          console.log("Session data:", lookupResponse.data);
+          setError(
+            `This session is no longer active. (Session ID: ${responseId}, Status: ${
+              lookupResponse.data.status || "unknown"
+            })`
+          );
           return;
         }
         setSessionData(lookupResponse.data);
       } else {
+        console.log(
+          "Session ID mismatch. Response:",
+          responseId,
+          "Requested:",
+          requestedId
+        );
+        console.log("Full response data:", lookupResponse.data);
         setError(
           "Session information doesn't match. Please check the QR code and try again."
         );

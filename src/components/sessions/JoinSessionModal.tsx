@@ -80,8 +80,21 @@ export function JoinSessionModal({
         joinCode: code.trim(),
       });
 
-      if (!response.data || !response.data.isActive) {
-        setError("This session is no longer active.");
+      console.log("Session lookup response:", response.data);
+
+      if (!response.data) {
+        setError("No session found with this code.");
+        return;
+      }
+
+      if (!response.data.isActive) {
+        console.log("Session active status:", response.data.isActive);
+        console.log("Session status:", response.data.status);
+        setError(
+          `This session is no longer active. (Status: ${
+            response.data.status || "unknown"
+          })`
+        );
         return;
       }
 
