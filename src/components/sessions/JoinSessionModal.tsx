@@ -10,7 +10,8 @@ interface SessionInfo {
   id: number;
   sessionName: string;
   playerCount: number;
-  isActive: boolean;
+  isActive: boolean; // true = IN_PROGRESS, false = COMPLETED
+  status?: string;   // "active" or "completed"
   joinCode: string;
 }
 
@@ -91,9 +92,7 @@ export function JoinSessionModal({
         console.log("Session active status:", response.data.isActive);
         console.log("Session status:", response.data.status);
         setError(
-          `This session is no longer active. (Status: ${
-            response.data.status || "unknown"
-          })`
+          `This session has ended and is no longer accepting new players.`
         );
         return;
       }
@@ -102,7 +101,7 @@ export function JoinSessionModal({
       setStep("name");
     } catch (err: unknown) {
       // Extract specific error message if available
-      let errorMessage = "No active session found with this code";
+      let errorMessage = "No session found with this code";
 
       if (axios.isAxiosError(err)) {
         const axiosError = err as AxiosError<ApiErrorResponse>;

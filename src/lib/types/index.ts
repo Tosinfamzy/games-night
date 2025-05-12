@@ -4,7 +4,7 @@ export type GameState =
   | "in_progress"
   | "paused"
   | "completed";
-export type SessionState = "PENDING" | "IN_PROGRESS" | "COMPLETED";
+export type SessionState = "IN_PROGRESS" | "COMPLETED"; // Simplified session lifecycle
 export type Difficulty = "easy" | "medium" | "hard";
 
 export interface Game {
@@ -58,7 +58,8 @@ export interface Team {
 export interface Session {
   id: number;
   sessionName: string;
-  isActive: boolean;
+  isActive: boolean; // true = IN_PROGRESS, false = COMPLETED
+  status?: string;   // "active" or "completed"
   games: Game[];
   players: Player[];
   startTime?: string;
@@ -68,12 +69,13 @@ export interface Session {
   createdAt: string;
   updatedAt: string;
   playerCount: number;
+  joinCode?: string;
 }
 
 export interface CreateSessionDto {
   gameIds: number[];
   sessionName: string;
-  isActive?: boolean;
+  isActive?: boolean; // Default is true - sessions are created in IN_PROGRESS state
 }
 
 export interface CreatePlayerDto {

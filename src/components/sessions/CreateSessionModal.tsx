@@ -19,6 +19,7 @@ export function CreateSessionModal({
 }: CreateSessionModalProps) {
   const [formData, setFormData] = useState<SessionFormData>({
     sessionName: "",
+    // Sessions are always active upon creation in the new lifecycle model
     isActive: true,
   });
   const [isNewHost, setIsNewHost] = useState(false);

@@ -117,12 +117,12 @@ export default function SessionPage() {
       return;
     }
 
-    if (confirm("Are you sure you want to end this session?")) {
+    if (confirm("Are you sure you want to complete this session? Once completed, it cannot be reactivated and no new players will be able to join.")) {
       try {
         await endSession(sessionId);
         router.push("/sessions");
       } catch (error) {
-        console.error("Failed to end session:", error);
+        console.error("Failed to complete session:", error);
       }
     }
   };
@@ -181,7 +181,7 @@ export default function SessionPage() {
               {currentSession.sessionName}
             </h1>
             <p className="text-gray-600 mt-2">
-              Status: {currentSession.isActive ? "Active" : "Inactive"} ·
+              Status: {currentSession.isActive ? "In Progress" : "Completed"} ·
               Created {new Date(currentSession.createdAt).toLocaleDateString()}
             </p>
           </div>
@@ -195,7 +195,7 @@ export default function SessionPage() {
                   Add Games
                 </Button>
                 <Button onClick={handleEndSession} variant="outline">
-                  End Session
+                  Complete Session
                 </Button>
               </div>
             )}

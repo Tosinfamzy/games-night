@@ -97,7 +97,7 @@ export default function SessionsPage() {
                       {session.sessionName}
                     </h2>
                     <p className="text-sm text-gray-600 mt-1">
-                      {session.isActive ? "Active" : "Ended"} · Created{" "}
+                      {session.isActive ? "In Progress" : "Completed"} · Created{" "}
                       {new Date(session.createdAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -108,7 +108,7 @@ export default function SessionsPage() {
                         : "bg-gray-100 text-gray-800"
                     }`}
                   >
-                    {session.isActive ? "Active" : "Ended"}
+                    {session.isActive ? "In Progress" : "Completed"}
                   </span>
                 </div>
 

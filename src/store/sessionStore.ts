@@ -163,9 +163,11 @@ const createSessionStore = () => {
 
           set({ isLoading: true, error: null });
           try {
+            // Ensure session is always created in active state
             const response = await api.post("/sessions", {
               ...data,
               hostId,
+              isActive: true, // Sessions are always created in active state
             });
             const session = toBaseSession(response.data);
             set((state) => ({
@@ -399,17 +401,17 @@ const createSessionStore = () => {
             await api.post(`/sessions/${id}/end`, { hostId: Number(hostId) });
             set((state) => ({
               sessions: state.sessions.map((s) =>
-                s.id === Number(id) ? { ...s, isActive: false } : s
+                s.id === Number(id) ? { ...s, isActive: false, status: "completed" } : s
               ),
               currentSession:
                 state.currentSession?.id === Number(id)
-                  ? { ...state.currentSession, isActive: false }
+                  ? { ...state.currentSession, isActive: false, status: "completed" }
                   : state.currentSession,
               isLoading: false,
             }));
           } catch (error) {
             const errorMessage =
-              error instanceof Error ? error.message : "Failed to end session";
+              error instanceof Error ? error.message : "Failed to complete session";
             set({
               error: errorMessage,
               isLoading: false,

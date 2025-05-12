@@ -1208,13 +1208,13 @@
             "description": "Session started successfully"
           },
           "400": {
-            "description": "Invalid session state"
+            "description": "Cannot start a completed session or session without games/players"
           },
           "403": {
             "description": "Only the host can start their sessions"
           }
         },
-        "summary": "Start a session",
+        "summary": "Start or initialize a session game",
         "tags": ["sessions"]
       }
     },
@@ -1385,7 +1385,7 @@
             }
           },
           "400": {
-            "description": "Cannot add games to non-pending session"
+            "description": "Cannot add games to a completed session"
           },
           "404": {
             "description": "Session not found"

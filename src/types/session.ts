@@ -62,19 +62,19 @@ export interface BaseSession {
   joinCode: string;
 }
 
-export type SessionStatus = "active" | "completed" | "cancelled";
+export type SessionStatus = "active" | "completed"; // Simplified session status
 
 export interface CreateSessionDto {
   sessionName: string;
   hostId: number;
   gameIds?: number[];
-  isActive?: boolean;
+  isActive?: boolean; // Default is true - sessions are created in IN_PROGRESS state
 }
 
 export interface UpdateSessionDto {
   hostId: number;
   sessionName?: string;
-  isActive?: boolean;
+  isActive?: boolean; // Setting to false completes the session
 }
 
 export type Session = BaseSession;
