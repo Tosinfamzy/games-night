@@ -12,7 +12,7 @@ interface SessionManagerProps {
 export function SessionManager({ sessionId, session }: SessionManagerProps) {
   const [teams, setTeams] = useState<BaseTeam[]>(session.teams || []);
   const [players, setPlayers] = useState<BasePlayer[]>(session.players || []);
-  const { createTeam } = useSessionStore();
+  const { createTeam, createRandomTeams } = useSessionStore();
 
   const handlePlayerAdded = (newPlayer: BasePlayer) => {
     setPlayers((prevPlayers) => [...prevPlayers, newPlayer]);
@@ -34,6 +34,23 @@ export function SessionManager({ sessionId, session }: SessionManagerProps) {
     const newTeam = await createTeam(sessionId, teamName);
     setTeams((prevTeams) => [...prevTeams, newTeam]);
     return newTeam;
+  };
+
+  const handleTeamsRandomized = async (): Promise<BaseTeam[]> => {
+    if (players.length < 4) {
+      throw new Error(
+        "You need at least 4 players in the session to create random teams."
+      );
+    }
+
+    const updatedSession = await createRandomTeams(sessionId, {
+      numberOfTeams: 2,
+    });
+    if (updatedSession && updatedSession.teams) {
+      setTeams(updatedSession.teams);
+      return updatedSession.teams;
+    }
+    return [];
   };
 
   if (!session) {
@@ -61,7 +78,9 @@ export function SessionManager({ sessionId, session }: SessionManagerProps) {
             players={players}
             onTeamUpdated={handleTeamUpdated}
             onTeamCreated={handleTeamCreated}
+            onTeamsRandomized={handleTeamsRandomized}
             sessionId={sessionId}
+            hostId={session.hostId}
           />
         </div>
       </div>

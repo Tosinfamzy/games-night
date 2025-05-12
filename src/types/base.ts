@@ -15,6 +15,10 @@ export interface BaseSession {
   createdAt: string;
   updatedAt: string;
   playerCount: number;
+  hostId: number;
+  teams?: BaseTeam[];
+  players?: BasePlayer[];
+  joinCode?: string;
 }
 
 export interface BasePlayer {

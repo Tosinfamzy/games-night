@@ -11,6 +11,10 @@ interface TeamManagerProps {
   onTeamCreated?: (teamName: string) => Promise<BaseTeam>;
   onTeamsRandomized?: () => Promise<BaseTeam[]>;
   sessionId: string;
+  /**
+   * The host ID is required for team creation and team randomization.
+   * API endpoints will return a 400 error if this is missing or not a number.
+   */
   hostId?: number;
 }
 
@@ -92,6 +96,11 @@ export function TeamManager({
       return;
     }
 
+    if (!hostId) {
+      setTeamError("Host ID is required to create a team");
+      return;
+    }
+
     setTeamError(null);
     setIsCreatingTeam(true);
 
@@ -101,7 +110,7 @@ export function TeamManager({
       } else {
         await api.post(`/sessions/${sessionId}/teams`, {
           name: newTeamName,
-          hostId,
+          hostId: Number(hostId),
         });
       }
       setNewTeamName("");
@@ -120,6 +129,13 @@ export function TeamManager({
       return;
     }
 
+    if (!hostId) {
+      setTeamError(
+        "Host ID is required to randomize teams. Please create a host player first."
+      );
+      return;
+    }
+
     setTeamError(null);
     setIsRandomizingTeams(true);
 
@@ -131,14 +147,19 @@ export function TeamManager({
           `/sessions/${sessionId}/teams/random`,
           {},
           {
-            params: { hostId },
+            params: { hostId: Number(hostId) },
           }
         );
       }
     } catch (error) {
-      setTeamError(
-        error instanceof Error ? error.message : "Failed to randomize teams"
-      );
+      console.error("Error randomizing teams:", error);
+      if (error instanceof Error && error.message.includes("hostId")) {
+        setTeamError("Failed to randomize teams: Host ID is required");
+      } else {
+        setTeamError(
+          error instanceof Error ? error.message : "Failed to randomize teams"
+        );
+      }
     } finally {
       setIsRandomizingTeams(false);
     }
@@ -150,24 +171,36 @@ export function TeamManager({
   );
 
   const canCreateTeam = players.length >= 4 && availablePlayers.length >= 2;
-  const canRandomizeTeams = teams.length === 0 && players.length >= 4;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-4 mb-4">
-        {canRandomizeTeams && (
-          <Button
-            onClick={handleRandomizeTeams}
-            disabled={isRandomizingTeams}
-            variant="outline"
-          >
-            {isRandomizingTeams ? "Creating..." : "Create Random Teams"}
-          </Button>
+        {players.length >= 4 && teams.length === 0 && (
+          <>
+            <Button
+              onClick={handleRandomizeTeams}
+              disabled={isRandomizingTeams || !hostId}
+              variant="outline"
+              title={
+                !hostId ? "Host ID is required to create random teams" : ""
+              }
+            >
+              {isRandomizingTeams ? "Creating..." : "Create Random Teams"}
+            </Button>
+            {!hostId && (
+              <div className="w-full mt-2 text-sm text-amber-600">
+                Host ID is required to create random teams.
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {teams.map((team) => (
-        <div key={team.id} className="p-4 bg-white shadow rounded-lg space-y-2">
+        <div
+          key={team.id}
+          className="p-4 bg-white shadow rounded-lg space-y-2 text-gray-900"
+        >
           <h3 className="font-semibold text-gray-900">{team.name}</h3>
           <div className="space-y-1">
             {team.players.map((player) => (
@@ -218,14 +251,14 @@ export function TeamManager({
       ))}
 
       {canCreateTeam && (
-        <div className="mt-6 p-4 border rounded-lg">
+        <div className="mt-6 p-4 border rounded-lg text-gray-900">
           <h3 className="text-lg font-semibold mb-4">Create New Team</h3>
           {teamError && (
             <div className="mb-4 p-2 bg-red-50 text-red-700 rounded-md">
               {teamError}
             </div>
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-gray-900">
             <Input
               placeholder="Team Name"
               value={newTeamName}

@@ -1085,6 +1085,17 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "description": "Number of teams to create randomly",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRandomTeamsDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Teams created successfully",
@@ -1133,6 +1144,17 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "description": "Custom team configurations with player assignments",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomTeamsDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Teams created successfully",
@@ -2691,6 +2713,50 @@
           }
         },
         "required": ["hostId", "players"]
+      },
+      "CreateRandomTeamsDto": {
+        "type": "object",
+        "properties": {
+          "numberOfTeams": {
+            "type": "number",
+            "description": "Number of teams to create randomly",
+            "example": 2,
+            "minimum": 1
+          }
+        },
+        "required": ["numberOfTeams"]
+      },
+      "TeamConfig": {
+        "type": "object",
+        "properties": {
+          "teamName": {
+            "type": "string",
+            "description": "Name of the team",
+            "example": "Team Alpha"
+          },
+          "playerIds": {
+            "description": "Array of player IDs to assign to the team",
+            "example": [1, 2, 3],
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": ["teamName", "playerIds"]
+      },
+      "CreateCustomTeamsDto": {
+        "type": "object",
+        "properties": {
+          "teams": {
+            "description": "Array of team configurations with player assignments",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeamConfig"
+            }
+          }
+        },
+        "required": ["teams"]
       },
       "AddGamesDto": {
         "type": "object",
