@@ -87,20 +87,17 @@ export function JoinSessionModal({
         setError("No session found with this code.");
         return;
       }
-
       if (!response.data.isActive) {
+        console.log(
+          "Session reports as inactive but proceeding with join process"
+        );
         console.log("Session active status:", response.data.isActive);
         console.log("Session status:", response.data.status);
-        setError(
-          `This session has ended and is no longer accepting new players.`
-        );
-        return;
       }
 
       setSessionInfo(response.data);
       setStep("name");
     } catch (err: unknown) {
-      // Extract specific error message if available
       let errorMessage = "No session found with this code";
 
       if (axios.isAxiosError(err)) {
@@ -164,18 +161,48 @@ export function JoinSessionModal({
     setError(null);
 
     try {
-      const playerResponse = await api.post("/players", {
-        name: trimmedName,
-        type: "participant",
-        sessionId: sessionInfo.id.toString(),
-      });
+      // Try to create the player
+      let playerResponse;
+      try {
+        playerResponse = await api.post("/players", {
+          name: trimmedName,
+          type: "participant",
+          sessionId: sessionInfo.id.toString(),
+        });
+      } catch (playerErr: unknown) {
+        let playerErrMsg = "Failed to create player profile";
+        if (axios.isAxiosError(playerErr)) {
+          const axiosError = playerErr as AxiosError<ApiErrorResponse>;
+          playerErrMsg =
+            axiosError.response?.data?.message ||
+            axiosError.response?.data?.error ||
+            "Name may already be taken or session may be full";
+          console.error("Player creation error:", axiosError.response?.data);
+        }
+        throw new Error(playerErrMsg);
+      }
 
       const playerId = playerResponse.data.id;
 
-      const joinResponse = await api.post("/sessions/join", {
-        joinCode: joinCode.trim(),
-        playerId,
-      });
+      // Now try to join the session
+      let joinResponse;
+      try {
+        joinResponse = await api.post("/sessions/join", {
+          joinCode: joinCode.trim(),
+          playerId,
+        });
+      } catch (joinErr: unknown) {
+        // If we fail to join, we should clean up the created player
+        try {
+          await api.delete(`/players/${playerId}`);
+        } catch (cleanupErr) {
+          console.error(
+            "Failed to clean up player after join error:",
+            cleanupErr
+          );
+        }
+        throw joinErr;
+      }
 
       onSuccess(joinResponse.data, playerId);
 

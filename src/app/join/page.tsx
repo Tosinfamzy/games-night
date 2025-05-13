@@ -9,7 +9,6 @@ import { Session } from "@/types/session";
 import { api } from "@/services/api";
 import axios, { AxiosError } from "axios";
 
-// Define the API error response structure
 interface ApiErrorResponse {
   message?: string;
   error?: string;
@@ -54,22 +53,17 @@ function JoinPageContent() {
         joinCode: code.trim(),
       });
 
-      // Compare session IDs as strings to avoid issues with parsing
       const responseId = lookupResponse.data?.id?.toString();
       const requestedId = sessionId?.toString();
 
       if (lookupResponse.data && responseId === requestedId) {
+        setSessionData(lookupResponse.data);
+
         if (!lookupResponse.data.isActive) {
+          console.log("Session reports as inactive but proceeding anyway");
           console.log("Session active status:", lookupResponse.data.isActive);
           console.log("Session data:", lookupResponse.data);
-          setError(
-            `This session is no longer active. (Session ID: ${responseId}, Status: ${
-              lookupResponse.data.status || "unknown"
-            })`
-          );
-          return;
         }
-        setSessionData(lookupResponse.data);
       } else {
         console.log(
           "Session ID mismatch. Response:",

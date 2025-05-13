@@ -13,14 +13,14 @@ export function SessionQRCode({
   sessionId,
   className = "",
 }: SessionQRCodeProps) {
-  // Ensure the join code and session ID are properly encoded for URLs
   const encodedJoinCode = encodeURIComponent(joinCode.trim());
 
-  // Build the URL based on available information
-  const joinUrl = `${
-    typeof window !== "undefined" ? window.location.origin : ""
-  }/join?code=${encodedJoinCode}${
-    sessionId ? `&session=${encodeURIComponent(sessionId)}` : ""
+  const encodedSessionId = sessionId ? encodeURIComponent(sessionId) : "";
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+
+  const joinUrl = `${origin}/join?code=${encodedJoinCode}${
+    encodedSessionId ? `&session=${encodedSessionId}` : ""
   }&source=qr`;
 
   return (
