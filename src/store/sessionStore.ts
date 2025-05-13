@@ -50,7 +50,9 @@ interface SessionStore {
   ) => Promise<BaseSession>;
   setHostId: (id: number) => void;
   clearHostId: () => void;
+  setError: (message: string | null) => void;
   createHostPlayer: (name: string) => Promise<number>;
+  validateHostId: () => Promise<boolean>;
 }
 
 const createSessionStore = () => {
@@ -69,6 +71,10 @@ const createSessionStore = () => {
 
         clearHostId: () => {
           set({ hostId: null, sessions: [], currentSession: null });
+        },
+
+        setError: (message: string | null) => {
+          set({ error: message });
         },
 
         createHostPlayer: async (name: string) => {
@@ -93,9 +99,31 @@ const createSessionStore = () => {
           }
         },
 
+        validateHostId: async () => {
+          const hostId = get().hostId;
+          if (!hostId) {
+            return false;
+          }
+
+          try {
+            const response = await api.get(`/players/${hostId}`);
+            return response.status === 200;
+          } catch {
+            return false;
+          }
+        },
+
         fetchSessions: async () => {
           const hostId = get().hostId;
           if (!hostId) {
+            set({ sessions: [], isLoading: false });
+            return;
+          }
+
+          // Validate hostId before proceeding
+          const isValid = await get().validateHostId();
+          if (!isValid) {
+            get().clearHostId();
             set({ sessions: [], isLoading: false });
             return;
           }
@@ -125,6 +153,15 @@ const createSessionStore = () => {
           if (!hostId) {
             throw new Error(
               "No host player found. Create a host player first."
+            );
+          }
+
+          // Validate hostId before proceeding
+          const isValid = await get().validateHostId();
+          if (!isValid) {
+            get().clearHostId();
+            throw new Error(
+              "Host player is no longer valid. Please create a new host player."
             );
           }
 
@@ -158,6 +195,15 @@ const createSessionStore = () => {
           if (!hostId) {
             throw new Error(
               "No host player found. Create a host player first."
+            );
+          }
+
+          // Validate hostId before proceeding
+          const isValid = await get().validateHostId();
+          if (!isValid) {
+            get().clearHostId();
+            throw new Error(
+              "Host player is no longer valid. Please create a new host player."
             );
           }
 
