@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Modal } from "@/components/ui";
 import { Input } from "@/components/ui";
 import { Button } from "@/components/ui";
@@ -15,10 +15,100 @@ interface SessionInfo {
   joinCode: string;
 }
 
+interface Player {
+  id: number;
+  name: string;
+}
+
 // Define the API error response structure
 interface ApiErrorResponse {
   message?: string;
   error?: string;
+}
+
+// Helper function to extract error messages from API responses
+const getApiErrorMessage = (err: unknown): string => {
+  if (axios.isAxiosError(err)) {
+    const axiosError = err as AxiosError<ApiErrorResponse>;
+    return (
+      axiosError.response?.data?.message ||
+      axiosError.response?.data?.error ||
+      axiosError.message ||
+      "An unknown API error occurred"
+    );
+  } else if (err instanceof Error) {
+    return err.message;
+  }
+  return "An unexpected error occurred";
+};
+
+// API call functions
+async function lookupSessionByCode(code: string): Promise<SessionInfo> {
+  try {
+    const response = await api.post("/sessions/lookup", {
+      joinCode: code.trim(),
+    });
+    console.log("Session lookup response:", response.data);
+    if (!response.data) {
+      throw new Error("No session found with this code.");
+    }
+    return response.data as SessionInfo;
+  } catch (err) {
+    console.error("Session lookup error:", err);
+    throw new Error(getApiErrorMessage(err));
+  }
+}
+
+async function createPlayerInSession(
+  name: string,
+  sessionId: string
+): Promise<Player> {
+  const payload = { name, sessionId };
+  console.log(
+    "createPlayerInSession: Sending payload to POST /players:",
+    JSON.stringify(payload, null, 2)
+  );
+  try {
+    const response = await api.post("/players", payload);
+    console.log(
+      "createPlayerInSession: Received response from POST /players:",
+      response.data
+    );
+    if (!response.data || !response.data.id) {
+      throw new Error("Player data not found in response");
+    }
+    return response.data;
+  } catch (error) {
+    console.error("createPlayerInSession: Error from POST /players:", error);
+    throw new Error(getApiErrorMessage(error));
+  }
+}
+
+async function joinSessionWithPlayer(
+  joinCode: string,
+  playerId: number
+): Promise<Session> {
+  try {
+    const response = await api.post("/sessions/join", {
+      joinCode: joinCode.trim(),
+      playerId,
+    });
+    console.log("Join session response:", response.data);
+    return response.data as Session;
+  } catch (err) {
+    console.error("Join session error:", err);
+    throw new Error(getApiErrorMessage(err));
+  }
+}
+
+async function cleanupPlayer(playerId: number): Promise<void> {
+  try {
+    await api.delete(`/players/${playerId}`);
+    console.log(`Player ${playerId} cleaned up successfully.`);
+  } catch (err) {
+    console.error("Failed to clean up player after join error:", err);
+    // We don't re-throw here as this is a cleanup operation
+  }
 }
 
 interface JoinSessionModalProps {
@@ -46,29 +136,71 @@ export function JoinSessionModal({
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [playerIdForCleanup, setPlayerIdForCleanup] = useState<number | null>(
+    null
+  );
+  const playerToCleanupOnUnmountRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setError(null);
-
-      if (initialCode) {
-        setJoinCode(initialCode);
-
-        if (initialSessionData) {
-          setSessionInfo({
-            id: initialSessionData.id,
-            sessionName: initialSessionData.sessionName,
-            playerCount: initialSessionData.playerCount || 0,
-            isActive: initialSessionData.isActive,
-            joinCode: initialSessionData.joinCode,
-          });
-          setStep("name");
-        } else if (fromQrCode) {
-          handleCodeCheck(initialCode);
-        }
-      }
+    if (!isOpen) {
+      return;
     }
-  }, [initialCode, initialSessionData, isOpen, fromQrCode]);
+
+    setError(null);
+
+    if (initialCode) {
+      setJoinCode(initialCode);
+      setPlayerName("");
+
+      if (initialSessionData) {
+        setSessionInfo({
+          id: initialSessionData.id,
+          sessionName: initialSessionData.sessionName,
+          playerCount: initialSessionData.playerCount || 0,
+          isActive: initialSessionData.isActive,
+          joinCode: initialSessionData.joinCode,
+        });
+        setStep("name");
+      } else if (fromQrCode) {
+        setSessionInfo(null);
+        handleCodeCheck(initialCode);
+      } else {
+        setSessionInfo(null);
+        setStep("code");
+      }
+    } else if (initialSessionData) {
+      setJoinCode(initialSessionData.joinCode);
+      setPlayerName("");
+      setSessionInfo({
+        id: initialSessionData.id,
+        sessionName: initialSessionData.sessionName,
+        playerCount: initialSessionData.playerCount || 0,
+        isActive: initialSessionData.isActive,
+        joinCode: initialSessionData.joinCode,
+      });
+      setStep("name");
+    } else {
+      setJoinCode("");
+      setPlayerName("");
+      setSessionInfo(null);
+      setStep(fromQrCode ? "name" : "code");
+    }
+  }, [isOpen, initialCode, initialSessionData, fromQrCode]);
+
+  useEffect(() => {
+    playerToCleanupOnUnmountRef.current = playerIdForCleanup;
+  }, [playerIdForCleanup]);
+
+  useEffect(() => {
+    return () => {
+      if (playerToCleanupOnUnmountRef.current) {
+        console.log(
+          `JoinSessionModal unmounting. Cleaning up player ID: ${playerToCleanupOnUnmountRef.current}`
+        );
+        cleanupPlayer(playerToCleanupOnUnmountRef.current);
+      }
+    };
+  }, []);
 
   const handleCodeCheck = async (code: string) => {
     if (!code.trim()) return;
@@ -77,41 +209,22 @@ export function JoinSessionModal({
     setError(null);
 
     try {
-      const response = await api.post("/sessions/lookup", {
-        joinCode: code.trim(),
-      });
+      const sessionData = await lookupSessionByCode(code);
 
-      console.log("Session lookup response:", response.data);
-
-      if (!response.data) {
-        setError("No session found with this code.");
-        return;
-      }
-      if (!response.data.isActive) {
+      if (!sessionData.isActive) {
         console.log(
           "Session reports as inactive but proceeding with join process"
         );
-        console.log("Session active status:", response.data.isActive);
-        console.log("Session status:", response.data.status);
+        console.log("Session active status:", sessionData.isActive);
+        console.log("Session status:", sessionData.status);
       }
 
-      setSessionInfo(response.data);
+      setSessionInfo(sessionData);
       setStep("name");
     } catch (err: unknown) {
-      let errorMessage = "No session found with this code";
-
-      if (axios.isAxiosError(err)) {
-        const axiosError = err as AxiosError<ApiErrorResponse>;
-        errorMessage =
-          axiosError.response?.data?.message ||
-          axiosError.response?.data?.error ||
-          axiosError.message;
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
-      console.error("Session lookup error:", err);
+      setError(
+        err instanceof Error ? err.message : "No session found with this code"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -160,90 +273,51 @@ export function JoinSessionModal({
     setIsLoading(true);
     setError(null);
 
+    console.log(
+      `Attempting to create player: Name='${trimmedName}', SessionID='${
+        sessionInfo.id
+      }', SessionIDType='${typeof sessionInfo.id}'`
+    );
+    console.log(
+      "Full sessionInfo for player creation:",
+      JSON.stringify(sessionInfo, null, 2)
+    );
+
+    let createdPlayerId: number | null = null;
+
     try {
-      // Try to create the player
-      let playerResponse;
-      try {
-        playerResponse = await api.post("/players", {
-          name: trimmedName,
-          type: "participant",
-          sessionId: sessionInfo.id.toString(), // Changed: Ensure sessionId is a string to match CreatePlayerDto
-        });
-      } catch (playerErr: unknown) {
-        let playerErrMsg = "Failed to create player profile";
-        if (axios.isAxiosError(playerErr)) {
-          const axiosError = playerErr as AxiosError<ApiErrorResponse>;
-          playerErrMsg =
-            axiosError.response?.data?.message ||
-            axiosError.response?.data?.error ||
-            "Name may already be taken or session may be full";
-          console.error("Player creation error:", axiosError.response?.data);
-        }
-        throw new Error(playerErrMsg);
-      }
+      const playerResponse = await createPlayerInSession(
+        trimmedName,
+        sessionInfo.id.toString()
+      );
+      createdPlayerId = playerResponse.id;
+      setPlayerIdForCleanup(createdPlayerId);
 
-      const playerId = playerResponse.data.id;
+      const joinedSession = await joinSessionWithPlayer(
+        joinCode.trim() || sessionInfo.joinCode,
+        createdPlayerId
+      );
 
-      // Now try to join the session
-      let joinResponse;
-      try {
-        joinResponse = await api.post("/sessions/join", {
-          joinCode: joinCode.trim(),
-          playerId,
-        });
-      } catch (joinErr: unknown) {
-        // If we fail to join, we should clean up the created player
-        try {
-          await api.delete(`/players/${playerId}`);
-        } catch (cleanupErr) {
-          console.error(
-            "Failed to clean up player after join error:",
-            cleanupErr
-          );
-        }
-        throw joinErr;
-      }
+      onSuccess(joinedSession, createdPlayerId);
 
-      onSuccess(joinResponse.data, playerId);
-
+      setPlayerIdForCleanup(null);
       setJoinCode("");
       setPlayerName("");
       setSessionInfo(null);
       setStep(fromQrCode ? "name" : "code");
+      setError(null);
     } catch (err: unknown) {
-      // Extract detailed error message
+      if (createdPlayerId) {
+        await cleanupPlayer(createdPlayerId);
+      }
+
       let errorMessage = "Failed to join session. Please try again.";
-
-      if (axios.isAxiosError(err)) {
-        const axiosError = err as AxiosError<ApiErrorResponse>;
-
-        if (axiosError.response?.data) {
-          errorMessage =
-            axiosError.response.data.message ||
-            axiosError.response.data.error ||
-            errorMessage;
-
-          // Special handling for common errors
-          if (axiosError.response.status === 400) {
-            const errorData = axiosError.response.data;
-            const errorDataStr = typeof errorData === "string" ? errorData : "";
-            const errorDataMsg = errorData?.message || "";
-            const errorDataErr = errorData?.error || "";
-
-            if (
-              errorDataMsg.includes("name") ||
-              errorDataErr.includes("name") ||
-              errorDataStr.includes("name")
-            ) {
-              errorMessage =
-                "This name is already taken in the session. Please try another name.";
-            }
-          }
-        } else if (axiosError.message) {
-          errorMessage = axiosError.message;
-        }
-      } else if (err instanceof Error) {
+      if (err instanceof Error) {
         errorMessage = err.message;
+        if (errorMessage.toLowerCase().includes("name may already be taken")) {
+          errorMessage =
+            "This name is already taken in the session. Please try another name.";
+        }
       }
 
       setError(errorMessage);
@@ -264,11 +338,12 @@ export function JoinSessionModal({
   };
 
   const handleClose = () => {
+    setError(null);
     setJoinCode("");
     setPlayerName("");
     setSessionInfo(null);
-    setError(null);
-    setStep(fromQrCode ? "name" : "code");
+    setStep(fromQrCode && initialCode ? "name" : "code");
+    setIsLoading(false);
     onClose();
   };
 
