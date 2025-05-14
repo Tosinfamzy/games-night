@@ -167,7 +167,7 @@ export function JoinSessionModal({
         playerResponse = await api.post("/players", {
           name: trimmedName,
           type: "participant",
-          sessionId: sessionInfo.id.toString(),
+          sessionId: sessionInfo.id, // Changed: pass sessionId as a number
         });
       } catch (playerErr: unknown) {
         let playerErrMsg = "Failed to create player profile";
