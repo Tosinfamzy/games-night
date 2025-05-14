@@ -106,9 +106,18 @@ const createSessionStore = () => {
           }
 
           try {
-            const response = await api.get(`/players/${hostId}`);
+            // Add a timeout to the request to prevent it from hanging
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            const response = await api.get(`/players/${hostId}`, {
+              signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
             return response.status === 200;
-          } catch {
+          } catch (error) {
+            console.error("Host validation error:", error);
             return false;
           }
         },

@@ -22,8 +22,12 @@ export default function SessionPage() {
   if (!sessionId) {
     throw new Error("Session ID is missing.");
   }
+
   const [isCreateGameModalOpen, setIsCreateGameModalOpen] = useState(false);
   const [isHostModalOpen, setIsHostModalOpen] = useState(false);
+  const [isValidatingHost, setIsValidatingHost] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
   const {
     currentSession,
     isLoading: isSessionLoading,
@@ -32,15 +36,46 @@ export default function SessionPage() {
     endSession,
     hostId,
     setHostId,
+    validateHostId,
   } = useSessionStore();
 
   useEffect(() => {
-    if (sessionId && hostId) {
-      fetchSession(sessionId);
-    } else if (sessionId && !hostId) {
-      setIsHostModalOpen(true);
+    let isMounted = true;
+
+    async function checkAndFetchSession() {
+      setIsValidatingHost(true);
+
+      if (isInitialLoad) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        if (isMounted) setIsInitialLoad(false);
+      }
+
+      if (!isMounted) return;
+
+      if (sessionId && hostId) {
+        const isValid = await validateHostId();
+
+        if (isValid && isMounted) {
+          await fetchSession(sessionId);
+          setIsHostModalOpen(false);
+        } else if (isMounted) {
+          console.log("Host validation failed, showing modal");
+          setIsHostModalOpen(true);
+        }
+      } else if (sessionId && !hostId && isMounted) {
+        console.log("No host ID found, showing modal");
+        setIsHostModalOpen(true);
+      }
+
+      if (isMounted) setIsValidatingHost(false);
     }
-  }, [sessionId, fetchSession, hostId]);
+
+    checkAndFetchSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionId, fetchSession, hostId, validateHostId, isInitialLoad]);
 
   const handleHostCreated = (newHostId: number) => {
     setHostId(newHostId);
@@ -131,6 +166,26 @@ export default function SessionPage() {
     }
   };
 
+  if (isValidatingHost) {
+    return (
+      <div className="w-full min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="text-center py-8 text-gray-900">
+            <h1 className="text-2xl font-bold mb-4">
+              Validating Session Access
+            </h1>
+            <p className="mb-6">
+              Please wait while we verify your session credentials...
+            </p>
+            <div className="flex justify-center">
+              <div className="animate-pulse w-12 h-12 rounded-full bg-blue-200"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!hostId) {
     return (
       <div className="w-full min-h-screen bg-white">
@@ -158,21 +213,56 @@ export default function SessionPage() {
 
   if (isSessionLoading) {
     return (
-      <div className="text-center py-8 text-gray-900">Loading session...</div>
+      <div className="w-full min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="text-center py-8 text-gray-900">
+            <h1 className="text-2xl font-bold mb-4">Loading Session</h1>
+            <p className="mb-6">
+              Please wait while we load the session data...
+            </p>
+            <div className="flex justify-center">
+              <div className="animate-pulse w-12 h-12 rounded-full bg-blue-200"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
   if (sessionError) {
     return (
-      <div className="bg-red-50 text-red-700 p-4 rounded-lg">
-        {sessionError}
+      <div className="w-full min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="bg-red-50 text-red-700 p-4 rounded-lg">
+            <h2 className="text-xl font-bold mb-2">Error Loading Session</h2>
+            <p>{sessionError}</p>
+            <div className="mt-4">
+              <Button onClick={() => router.push("/sessions")}>
+                Back to Sessions
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!currentSession) {
     return (
-      <div className="text-center py-8 text-gray-900">Session not found</div>
+      <div className="w-full min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="text-center py-8 text-gray-900">
+            <h1 className="text-2xl font-bold mb-4">Session Not Found</h1>
+            <p className="mb-6">
+              The session you&apos;re looking for doesn&apos;t exist or you
+              don&apos;t have access to it.
+            </p>
+            <Button onClick={() => router.push("/sessions")}>
+              Back to Sessions
+            </Button>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -206,7 +296,6 @@ export default function SessionPage() {
           </div>
         </div>
 
-        {/* Session Management Section */}
         <section className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">
             Session Management

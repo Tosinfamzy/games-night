@@ -15,6 +15,7 @@ export function CreateHostPlayerModal({
   isOpen,
   onClose,
   onSuccess,
+  sessionId,
 }: CreateHostPlayerModalProps) {
   const [hostName, setHostName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -30,14 +31,34 @@ export function CreateHostPlayerModal({
     setSuccessMessage(null);
 
     try {
+      // Create host player
       const response = await api.post("/players/host", {
         name: hostName.trim(),
       });
 
+      const hostId = response.data.id;
+
+      // If a sessionId is provided, verify access to this session
+      if (sessionId) {
+        try {
+          // Attempt to validate the session with the new host ID
+          await api.get(`/sessions/${sessionId}`, {
+            params: { hostId },
+          });
+          // If this doesn't throw an error, the host has access
+        } catch (error) {
+          console.log(
+            "New host cannot access session, but proceeding anyway:",
+            error
+          );
+          // We'll continue even if this fails, as the host might still work
+        }
+      }
+
       setSuccessMessage(`Host player "${hostName}" created successfully!`);
 
       setTimeout(() => {
-        onSuccess(response.data.id);
+        onSuccess(hostId);
         setHostName("");
       }, 800);
     } catch (err) {
@@ -54,8 +75,9 @@ export function CreateHostPlayerModal({
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <p className="text-gray-600">
-            Before creating a session, you need to create a host player who will
-            manage the session.
+            {sessionId
+              ? "You need to create a host player to access this session."
+              : "Before creating a session, you need to create a host player who will manage the session."}
           </p>
           <div>
             <label
@@ -71,6 +93,7 @@ export function CreateHostPlayerModal({
               onChange={(e) => setHostName(e.target.value)}
               placeholder="Enter your name"
               required
+              autoFocus
             />
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
